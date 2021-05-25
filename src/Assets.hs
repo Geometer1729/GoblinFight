@@ -32,6 +32,7 @@ defGob = Creature{
   _team       = error "team not set",
   _initiative = 2, -- perception as default init skill
   _hp         = 6,
+  _maxHp      = 6,
   _ac         = 16,
   _speed      = 25,
   _frightened = 0,

@@ -1,7 +1,7 @@
 name: goblinfight
 version:             0.1.0.0
 github: "Geometer1729/GoblinFight"
-license: GPL3
+license: GPL2
 
 description: Please see the README on GitHub at <https://github.com/Geometer1729/GoblinFight#readme>
 
@@ -14,6 +14,7 @@ dependencies:
 - mtl
 - random
 - gloss
+- gloss-juicy
 - lens
 - containers
 

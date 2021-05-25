@@ -14,6 +14,7 @@ data Creature = Creature{
   _cuid                :: CUID,
   _team                :: Int,
   _hp                  :: Int,
+  _maxHp               :: Int,
   _ac                  :: Int,
   _initiative          :: Int,
   _speed               :: Int,
