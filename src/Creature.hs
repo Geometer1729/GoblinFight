@@ -5,6 +5,7 @@
 module Creature where
 
 import Data.Set
+import Attacks
 import Control.Lens
 
 type CUID = Int
@@ -24,6 +25,7 @@ data Creature = Creature{
   _athletics           :: Int,
   _acrobatics          :: Int,
   _intimidate          :: Int,
+  _attacks             :: [Attack],
   _demoralizeCooldowns :: Set CUID, -- technically only 10 minutes
   _creatureSpecific    :: CSpecific
                         } deriving Show

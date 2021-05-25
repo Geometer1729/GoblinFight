@@ -4,6 +4,8 @@ module Actions where
 
 import Creature
 import World
+import Dice
+import Attacks
 
 import Control.Lens
 import Control.Monad.State
@@ -35,20 +37,22 @@ promote res = toEnum $ min 3 (fromEnum res -1)
 passes :: CheckRes -> Bool
 passes = (>=2) . fromEnum
 
-d20 :: PF2E Int
-d20 = lift $ randomRIO (1,20)
+roll :: Dice -> PF2E Int
+roll = lift . rollIO
 
-checkVS :: Creature -> Stat -> Creature -> Stat -> PF2E CheckRes
-checkVS creCheck skill creDC dcStat = do
-  roll <- d20
-  let dc    = creDC ^. dcStat
-  let score = roll + creCheck ^. skill
-  let dif = score - dc
-  let res = if | dif <= -10 -> CritFail
+d20 :: Dice
+d20 = d 20
+
+check :: Int -> Int -> PF2E CheckRes
+check bon dc = do
+  dieRoll <- roll d20
+  let score = dieRoll + bon
+      dif = score - dc
+      res = if | dif <= -10 -> CritFail
                | dif <  0   -> Fail
                | dif < 10   -> Suc
                | otherwise  -> CritSuc
-  return $ case roll of
+  return $ case dieRoll of
     1  -> demote res
     20 -> promote res
     _  -> res
@@ -56,17 +60,46 @@ checkVS creCheck skill creDC dcStat = do
 tryTumble :: Creature -> Creature -> PF2E Bool
 tryTumble tumbling tumbled = if tumbling ^. team  == tumbled ^. team
                                 then return True
-                                else passes <$> checkVS tumbling acrobatics tumbled refDC
+                                else passes <$> check (tumbling ^. acrobatics) (tumbled ^. refDC)
+
 
 doAction :: CUID -> Action -> PF2E ()
+
 doAction cid Move{moveActions=actions,movePath=path} = do
   cre <- lookupCre cid
   guard $ and $ zipWith neighbor (cre ^. location:path) path
   tumbleCount  <- length . catMaybes <$> mapM use [squares . at loc | loc <- path ]
   guard $ length path + tumbleCount <= actions * ( cre^.speed `div` 5 )
   doMoveHelp cid path
-doAction cid Step{} = undefined cid
+
+doAction cid Step{stepDest=dest} = do
+  cre <- lookupCre cid
+  guard $ neighbor (cre ^. location) dest
+  Nothing <- use $ squares . at dest
+  creTP cid dest
+
+doAction cid Strike{strikeIndex=i,strikeTarget=t} = do
+  cre <- lookupCre cid
+  let attack = (cre ^. attacks) !! i
+  mapen' <- use mapen :: PF2E Int
+  let (b0,b1,b2) = attack ^. bonus :: (Int,Int,Int)
+      bonus' = case mapen' of
+                 0 -> b0
+                 1 -> b1
+                 2 -> b2
+                 _ -> error "invalid map"
+  Just targetCid <- use $ squares . at t
+  target <- lookupCre targetCid
+  res <- check bonus' (target ^. ac)
+  let maybeDamage = case res of
+                 CritSuc -> Just $ attack ^. critDmg
+                 Suc     -> Just $ attack ^. dmg
+                 _       -> Nothing
+  mapM_ (`dealDamage` targetCid) maybeDamage
 doAction _ _ = undefined
+
+dealDamage :: Damage -> CUID -> PF2E ()
+dealDamage = undefined
 
 doMoveHelp :: CUID -> [Square] -> PF2E ()
 doMoveHelp _ [] = return ()
@@ -90,6 +123,8 @@ lookupCre cid = do
 neighbor :: Square -> Square -> Bool
 neighbor (x1,y1) (x2,y2) = max (abs (x1-x2)) (abs (y1-y2)) == 1
 
+-- should evantually take info about step vs move
+-- for reactions
 creTP :: CUID -> Square -> PF2E ()
 creTP cid dest = do
   cre <- lookupCre cid

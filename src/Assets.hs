@@ -1,7 +1,9 @@
 module Assets where
 
 import Actions
+import Attacks
 import Creature
+import Dice
 import World
 
 import Control.Lens hiding ((.>))
@@ -37,6 +39,16 @@ defGob = Creature{
   _speed      = 25,
   _frightened = 0,
   _location   = error "location not set",
+  _attacks    = [ Attack{
+                  _bonus   = (8,4,0),
+                  _dmg     = (S,d 6),
+                  _critDmg = (S,2 * d 6)
+                        }
+                , Attack{
+                  _bonus   = (8,3,-2),
+                  _dmg     = (P,d 6),
+                  _critDmg = (P,2 * d 6 + d 10)
+                        } ],
   _refDC      = 17,
   _athletics  = 2,
   _acrobatics = 5,
@@ -61,8 +73,8 @@ place cid sq = do
 
 rollInitCre :: Creature -> PF2E Int
 rollInitCre cre = do
-  roll <- d20
-  return $ roll + cre ^. initiative
+  dieRoll <- roll d20
+  return $ dieRoll + cre ^. initiative
 
 rollInit :: PF2E ()
 rollInit = do
