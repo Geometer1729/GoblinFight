@@ -1,0 +1,31 @@
+name: goblinfight
+version:             0.1.0.0
+github: "Geometer1729/GoblinFight"
+license: GPL3
+
+description: Please see the README on GitHub at <https://github.com/Geometer1729/GoblinFight#readme>
+
+extra-source-files:
+- README.md
+
+dependencies:
+- base
+- flow
+- mtl
+- random
+- gloss
+- lens
+- containers
+
+library:
+  source-dirs: src
+
+executables:
+  client-exe:
+    main:                Test.hs
+    source-dirs:         test
+    ghc-options:
+    - -O2
+    - -Wall
+    dependencies:
+    - goblinfight
