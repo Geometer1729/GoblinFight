@@ -53,13 +53,18 @@ defGob = Creature{
                   _critDmg  = (P,2 * d 6 + d 10),
                   _ammoType = Just "arrow"
                         } ],
+  _prone      = True,
   _ammo       = M.fromList [("arrow",10)],
   _refDC      = 17,
+  _fortDC     = 15,
+  _willDC     = 13,
   _athletics  = 2,
   _acrobatics = 5,
   _intimidate = 1,
   _demoralizeCooldowns = S.empty,
   _defenses   = M.empty,
+  _unarmed    = 0,
+  _grappledBy = Nothing,
   _creatureSpecific = Goblin
                  }
 

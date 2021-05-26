@@ -16,7 +16,6 @@ data Action =
     Move {moveActions :: Int , movePath :: [Square] }
   | Step {stepDest :: Square }
   | Strike { strikeIndex :: Int, strikeTarget :: Square }
-  | Aid{ aidTarget :: Square }
   | DropProne
   | Stand
   | Escape
@@ -97,14 +96,47 @@ doAction cid Strike{strikeIndex=i,strikeTarget=t} = do
       guard $ isJust mLeft
       let left = fromJust mLeft
       guard $ left > 0
-      cresById . at cid . _Just . ammo . at aType . _Just -= 1
+      cresById . ix cid . ammo . ix aType -= 1
     Nothing -> return ()
   let maybeDamage = case res of
                  CritSuc -> Just $ attack ^. critDmg
                  Suc     -> Just $ attack ^. dmg
                  _       -> Nothing
   mapM_ (`dealDamage` targetCid) maybeDamage
-doAction _ _ = undefined
+
+doAction cid DropProne = do
+  cresById . at cid . _Just . prone .= True
+
+doAction cid Stand = do
+  cresById . at cid . _Just . prone .= False
+
+doAction cid Escape = do
+  cre <- lookupCre cid
+  case cre ^. grappledBy of
+    Just (grapplerID,dc) -> do
+        let bon = (cre ^. athletics) `max` (cre ^. acrobatics) `max` (cre ^. unarmed) :: Int
+        res <- check bon dc
+        when (passes res) $ cresById . ix cid . grappledBy .= Nothing
+    Nothing -> error "escape acction used by un grappled creature"
+
+doAction cid Grapple{ grapTarget = targetSq } = do
+  cre <- lookupCre cid
+  Just targetId <- use $ squares . at targetSq
+  target   <- lookupCre targetId
+  res <- check (cre ^. athletics) (target ^. fortDC)
+  when (passes res) $ cresById . ix targetId . grappledBy .= Just (cid,10 + cre ^. athletics)
+
+doAction cid Demoralize{ demoralizeTarget = targetSq } = do
+  cre <- lookupCre cid
+  Just targetId <- use $ squares . at targetSq
+  target <- lookupCre targetId
+  guard $ targetId `notElem` (cre ^. demoralizeCooldowns )
+  res <- check (cre ^. intimidate) (target ^. willDC)
+  case res of
+    CritFail -> return ()
+    Fail     -> return ()
+    Suc      -> cresById . ix targetId . frightened %= max 1
+    CritSuc  -> cresById . ix targetId . frightened %= max 2
 
 dealDamage :: Damage -> CUID -> PF2E ()
 dealDamage (dType,dDice) cid = do
