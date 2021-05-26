@@ -42,17 +42,18 @@ defGob = Creature{
   _frightened = 0,
   _location   = error "location not set",
   _attacks    = [ Attack{
-                  _bonus   = (8,4,0),
-                  _dmg     = (S,d 6),
-                  _critDmg = (S,2 * d 6),
-                  _ammo    = Nothing
+                  _bonus    = (8,4,0),
+                  _dmg      = (S,d 6),
+                  _critDmg  = (S,2 * d 6),
+                  _ammoType = Nothing
                         }
                 , Attack{
-                  _bonus   = (8,3,-2),
-                  _dmg     = (P,d 6),
-                  _critDmg = (P,2 * d 6 + d 10),
-                  _ammo    = Just 10
+                  _bonus    = (8,3,-2),
+                  _dmg      = (P,d 6),
+                  _critDmg  = (P,2 * d 6 + d 10),
+                  _ammoType = Just "arrow"
                         } ],
+  _ammo       = M.fromList [("arrow",10)],
   _refDC      = 17,
   _athletics  = 2,
   _acrobatics = 5,

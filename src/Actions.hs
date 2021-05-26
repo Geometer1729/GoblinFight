@@ -87,11 +87,18 @@ doAction cid Strike{strikeIndex=i,strikeTarget=t} = do
                  0 -> b0
                  1 -> b1
                  2 -> b2
-                 _ -> error "invalid map"
+                 _ -> error "invalid multi attack penalty"
   Just targetCid <- use $ squares . at t
   target <- lookupCre targetCid
   res <- check bonus' (target ^. ac)
-  cresById . at cid . _Just . attacks . ix i . ammo .  _Just  -= 1
+  case attack ^. ammoType of
+    Just aType -> do
+      let mLeft = cre ^. ammo . at aType
+      guard $ isJust mLeft
+      let left = fromJust mLeft
+      guard $ left > 0
+      cresById . at cid . _Just . ammo . at aType . _Just -= 1
+    Nothing -> return ()
   let maybeDamage = case res of
                  CritSuc -> Just $ attack ^. critDmg
                  Suc     -> Just $ attack ^. dmg

@@ -4,9 +4,12 @@
 
 module Creature where
 
-import Data.Set
 import Attacks
+
+import Data.Set
 import Control.Lens
+
+import qualified Data.Map as M
 
 type CUID = Int
 type Square = (Int,Int)
@@ -27,6 +30,7 @@ data Creature = Creature{
   _intimidate          :: Int,
   _attacks             :: [Attack],
   _demoralizeCooldowns :: Set CUID, -- technically only 10 minutes
+  _ammo                :: M.Map String Int,
   _creatureSpecific    :: CSpecific
                         } deriving Show
 

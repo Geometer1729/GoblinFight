@@ -13,10 +13,10 @@ import qualified Data.Map as M
 type Damage = (DamageType,Dice)
 
 data Attack = Attack{
-  _bonus   :: (Int,Int,Int),
-  _dmg     :: Damage,
-  _ammo    :: Maybe Int,
-  _critDmg :: Damage
+  _bonus    :: (Int,Int,Int),
+  _dmg      :: Damage,
+  _ammoType :: Maybe String,
+  _critDmg  :: Damage
                     }deriving Show
 
 
