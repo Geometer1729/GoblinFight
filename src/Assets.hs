@@ -25,7 +25,9 @@ defWorld = World{
   _squares         = M.empty,
   _cresById        = M.empty,
   _globalInititive = [],
-  _nextCuid        = 0
+  _nextCuid        = 0,
+  _actionsLeft     = 3,
+  _mapen           = 0
                 }
 
 defGob :: Creature
@@ -41,21 +43,21 @@ defGob = Creature{
   _attacks    = [ Attack{
                   _bonus   = (8,4,0),
                   _dmg     = (S,d 6),
-                  _critDmg = (S,2 * d 6)
+                  _critDmg = (S,2 * d 6),
+                  _ammo    = Nothing
                         }
                 , Attack{
                   _bonus   = (8,3,-2),
                   _dmg     = (P,d 6),
-                  _critDmg = (P,2 * d 6 + d 10)
+                  _critDmg = (P,2 * d 6 + d 10),
+                  _ammo    = Just 10
                         } ],
   _refDC      = 17,
   _athletics  = 2,
   _acrobatics = 5,
   _intimidate = 1,
   _demoralizeCooldowns = S.empty,
-  _creatureSpecific = Goblin{
-    _arrows = 10
-                           }
+  _creatureSpecific = Goblin
                  }
 
 register :: Creature -> PF2E CUID

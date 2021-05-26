@@ -91,6 +91,7 @@ doAction cid Strike{strikeIndex=i,strikeTarget=t} = do
   Just targetCid <- use $ squares . at t
   target <- lookupCre targetCid
   res <- check bonus' (target ^. ac)
+  cresById . at cid . _Just . attacks . ix i . ammo .  _Just  -= 1
   let maybeDamage = case res of
                  CritSuc -> Just $ attack ^. critDmg
                  Suc     -> Just $ attack ^. dmg

@@ -29,9 +29,8 @@ data Creature = Creature{
   _creatureSpecific    :: CSpecific
                         } deriving Show
 
-data CSpecific = Goblin{
-  _arrows         :: Int
-            }  | DEF
+data CSpecific = Goblin
+              | Def
             deriving Show
 
 makeLenses ''Creature
