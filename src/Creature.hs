@@ -31,6 +31,7 @@ data Creature = Creature{
   _attacks             :: [Attack],
   _demoralizeCooldowns :: Set CUID, -- technically only 10 minutes
   _ammo                :: M.Map String Int,
+  _defenses            :: Defenses,
   _creatureSpecific    :: CSpecific
                         } deriving Show
 

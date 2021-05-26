@@ -107,7 +107,18 @@ doAction cid Strike{strikeIndex=i,strikeTarget=t} = do
 doAction _ _ = undefined
 
 dealDamage :: Damage -> CUID -> PF2E ()
-dealDamage = undefined
+dealDamage (dType,dDice) cid = do
+  dVal <- roll dDice
+  cre  <- lookupCre cid
+  let def  = cre ^. defenses . at dType
+  let dVal' = appDef def dVal
+  cresById . at cid . _Just . hp -= dVal'
+
+appDef :: Maybe DefenseType -> Int -> Int
+appDef Nothing           = id
+appDef (Just Immune)     = const 0
+appDef (Just (Resist r)) = max 0 . (`subtract` 4)
+appDef (Just (Vuln   v)) = (+v)
 
 doMoveHelp :: CUID -> [Square] -> PF2E ()
 doMoveHelp _ [] = return ()

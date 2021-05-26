@@ -59,6 +59,7 @@ defGob = Creature{
   _acrobatics = 5,
   _intimidate = 1,
   _demoralizeCooldowns = S.empty,
+  _defenses   = M.empty,
   _creatureSpecific = Goblin
                  }
 

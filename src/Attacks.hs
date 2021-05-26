@@ -26,9 +26,9 @@ data DamageType =
   | S
   | Fire
   | Acid
-  deriving Show
+  deriving (Eq,Ord,Show)
 
 type Defenses    = M.Map DamageType DefenseType
-data DefenseType = Immune | Resist Int | Vuln Int
+data DefenseType = Immune | Resist Int | Vuln Int deriving Show
 
 makeLenses ''Attack
