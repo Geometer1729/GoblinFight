@@ -3,8 +3,7 @@
 #-}
 module Display where
 
-import World
-import Creature
+import Types
 
 import Graphics.Gloss
 import Graphics.Gloss.Juicy
@@ -36,7 +35,7 @@ getRectGrid sMap = let squares = M.keys sMap
 
 loadRenderData :: World -> IO RenderData
 loadRenderData w = do
-    let rectgrid = getRectGrid (w ^. squares) 
+    let rectgrid = getRectGrid (w ^. squares)
     grassMaybe <- loadJuicyPNG "res/grass.png"
     gobMaybe <- loadJuicyPNG "res/gob.png"
     (width, height) <- getScreenSize

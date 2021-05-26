@@ -10,13 +10,14 @@ extra-source-files:
 
 dependencies:
 - base
+- containers
 - flow
-- mtl
-- random
 - gloss
 - gloss-juicy
 - lens
-- containers
+- mtl
+- process
+- random
 
 library:
   source-dirs: src

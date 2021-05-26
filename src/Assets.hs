@@ -1,10 +1,8 @@
 module Assets where
 
 import Actions
-import Attacks
-import Creature
 import Dice
-import World
+import Types
 
 import Control.Lens hiding ((.>))
 import Control.Monad.State
@@ -43,14 +41,14 @@ defGob = Creature{
   _location   = error "location not set",
   _attacks    = [ Attack{
                   _bonus    = (8,4,0),
-                  _dmg      = (S,d 6),
-                  _critDmg  = (S,2 * d 6),
+                  _dmg      = (S,d6),
+                  _critDmg  = (S,2 d6),
                   _ammoType = Nothing
                         }
                 , Attack{
                   _bonus    = (8,3,-2),
-                  _dmg      = (P,d 6),
-                  _critDmg  = (P,2 * d 6 + d 10),
+                  _dmg      = (P,d6),
+                  _critDmg  = (P,2 d6 + d10),
                   _ammoType = Just "arrow"
                         } ],
   _prone      = True,

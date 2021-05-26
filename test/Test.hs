@@ -1,7 +1,7 @@
 import Assets
-import World
+import Types
 import Actions
-import Display
+--import Display
 
 import Control.Monad.State
 

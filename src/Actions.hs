@@ -2,30 +2,13 @@
 
 module Actions where
 
-import Creature
-import World
 import Dice
-import Attacks
+import Types
 
 import Control.Lens
 import Control.Monad.State
 import Data.Maybe
 import System.Random
-
-data Action =
-    Move {moveActions :: Int , movePath :: [Square] }
-  | Step {stepDest :: Square }
-  | Strike { strikeIndex :: Int, strikeTarget :: Square }
-  | DropProne
-  | Stand
-  | Escape
-  | Grapple{ grapTarget :: Square }
-  | Demoralize{ demoralizeTarget :: Square }
-
-type PF2E = StateT World IO
-type Stat = Lens' Creature Int
-
-data CheckRes = CritFail | Fail | Suc | CritSuc deriving(Enum)
 
 demote :: CheckRes -> CheckRes
 demote res = toEnum $ max 0 (fromEnum res -1)
@@ -38,9 +21,6 @@ passes = (>=2) . fromEnum
 
 roll :: Dice -> PF2E Int
 roll = lift . rollIO
-
-d20 :: Dice
-d20 = d 20
 
 check :: Int -> Int -> PF2E CheckRes
 check bon dc = do
