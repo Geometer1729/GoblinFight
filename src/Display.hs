@@ -71,11 +71,13 @@ renderGrass rd = do
     let grassRenders = [Translate (fromIntegral (x * tilesize + gx) ) (fromIntegral (y * tilesize + gy)) (Scale scaleFactor scaleFactor (rd ^. grassPic)) | (x,y) <- (rd ^. battlefield)]
     return $ Pictures grassRenders
 
-coolAngle :: Float
-coolAngle = 4*pi/(1+sqrt 5)
-
-getTeamColor :: Int -> M.Map Int Color -> Color
-getTeamColor n cache = makeColor 0 0 0 1
+getTeamColor :: Int -> Color
+getTeamColor n = let
+  tau = 2*pi
+  phi = (1+sqrt 5)/2
+  coolAngle = tau/phi
+  angle = fromIntegral n * coolAngle
+    in makeColor (cos angle) (cos angle+tau/3) (cos angle-tau/3) 1
 
 renderGoblins :: RenderData -> IO Picture
 renderGoblins rd = do
