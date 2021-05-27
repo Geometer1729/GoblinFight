@@ -77,7 +77,8 @@ getTeamColor n = let
   phi = (1+sqrt 5)/2
   coolAngle = tau/phi
   angle = fromIntegral n * coolAngle
-    in makeColor (cos angle) (cos angle+tau/3) (cos angle-tau/3) 1
+  scaledCos x = (cos x + 1) /2
+    in makeColor (scaledCos angle) (scaledCos angle+tau/3) (scaledCos angle-tau/3) 1
 
 renderGoblins :: RenderData -> IO Picture
 renderGoblins rd = do
