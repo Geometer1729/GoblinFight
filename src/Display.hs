@@ -24,7 +24,7 @@ data RenderData = RenderData {
                     _globalZoom  :: Int,
                     _globalPan   :: (Int,Int),
                     _defaultImageSize :: Int
-                  }
+                  } deriving (Show)
 
 makeLenses ''RenderData
 
