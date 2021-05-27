@@ -27,7 +27,7 @@ data Action =
   | Escape
   | Grapple{ grapTarget :: Square }
   | Demoralize{ demoralizeTarget :: Square }
-  deriving (Show,Read)
+  deriving Show
 
 data AI = Native (World -> Action)
         | Executable FilePath

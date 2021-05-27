@@ -13,8 +13,6 @@ import Data.Maybe
 
 import qualified Data.Map as M
 
-import Debug.Trace
-
 --all textures stored on disk as 512x512 pixels
 data RenderData = RenderData {
                     _world       :: World,
@@ -76,8 +74,7 @@ getTeamColor n = let
   coolAngle = tau/phi
   angle = fromIntegral n * coolAngle
   scaledCos x = (cos x + 1) /2
-  color = makeColor (scaledCos angle) (scaledCos $ angle+tau/3) (scaledCos $ angle-tau/3) 1
-    in traceShow (n,color) $ color
+    in makeColor (scaledCos angle) (scaledCos $ angle+tau/3) (scaledCos $ angle-tau/3) 1
 
 renderGoblins :: RenderData -> IO Picture
 renderGoblins rd = do

@@ -61,10 +61,10 @@ doAction cid Step{stepDest=dest} = do
 
 doAction cid Strike{strikeIndex=i,strikeTarget=t} = do
   actionsLeft -= 1
-  mapen       += 1
   cre <- lookupCre cid
   let attack = (cre ^. attacks) !! i
   mapen' <- use mapen :: PF2E Int
+  mapen += 1
   let (b0,b1,b2) = attack ^. bonus :: (Int,Int,Int)
       bonus' = case mapen' of
                  0 -> b0
@@ -182,15 +182,4 @@ creTP cid dest = do
   squares  . at src  .= Nothing
   squares  . at dest .= Just cid
   cresById . at cid  .= Just cre'
-
-
-
-
-
-
-
-
-
-
-
 
