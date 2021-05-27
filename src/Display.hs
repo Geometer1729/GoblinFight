@@ -50,11 +50,17 @@ loadRenderData w = do
         _gobPic = fromJust gobMaybe,
         _screenWidth = width,
         _screenHeight = height,
-        _globalZoom = 32,
+        _globalZoom = 128,
         _globalPan = (0,0),
         _defaultImageSize = 512
     }
 
+onSquare :: RenderData -> Picture -> Square -> Picture
+onSquare rd p (x,y) = 
+    let tilesize = rd ^. globalZoom
+        (gx,gy) = rd ^. globalPan
+        scaleFactor = (fromIntegral $ rd ^. globalZoom) / (fromIntegral $ rd ^. defaultImageSize)
+    in Translate (fromIntegral $ x * tilesize + gx) (fromIntegral $ y * tilesize + gy) (Scale scaleFactor scaleFactor p) 
 
 renderBackground :: RenderData -> IO Picture
 renderBackground rd = let w = fromIntegral $ rd ^. screenWidth
@@ -65,10 +71,7 @@ renderBackground rd = let w = fromIntegral $ rd ^. screenWidth
 
 renderGrass :: RenderData -> IO Picture
 renderGrass rd = do
-    let tilesize = rd ^. globalZoom
-    let (gx,gy) = rd ^. globalPan
-    let scaleFactor = (fromIntegral $ rd ^. globalZoom) / (fromIntegral $ rd ^. defaultImageSize)
-    let grassRenders = [Translate (fromIntegral (x * tilesize + gx) ) (fromIntegral (y * tilesize + gy)) (Scale scaleFactor scaleFactor (rd ^. grassPic)) | (x,y) <- (rd ^. battlefield)]
+    let grassRenders = [onSquare rd (rd ^. grassPic) s | s <- (rd ^. battlefield)]
     return $ Pictures grassRenders
 
 getTeamColor :: Int -> Color
@@ -83,4 +86,22 @@ getTeamColor n = let
 renderGoblins :: RenderData -> IO Picture
 renderGoblins rd = do
    let gobs = M.elems $ rd ^. (world . cresById)
-   return undefined
+   let gobsPics = Pictures [onSquare rd (Pictures [rd ^. gobPic, renderGoblinHealthbar rd g]) (g ^. location) | g <- gobs]
+   return $ gobsPics
+
+renderGoblinHealthbar :: RenderData -> Creature -> Picture
+renderGoblinHealthbar rd g =
+    let healthbarWidth = 0.8 * (fromIntegral (rd ^. defaultImageSize))
+        healthbarHeight = healthbarWidth / 20
+        fullHealth = Color black (rectangleSolid healthbarWidth healthbarHeight)
+        teamcolor = getTeamColor (g ^. team)
+        maxhp = fromIntegral $ g ^. maxHp
+        curhp = fromIntegral $ g ^. hp
+        currentHealth = Translate (-((maxhp-curhp)/(2*maxhp))*healthbarWidth) 0 $  Color teamcolor (rectangleSolid (healthbarWidth * (curhp/maxhp)) healthbarHeight)
+    in Translate 0 (0.35*(fromIntegral $ rd ^. defaultImageSize)) $ Pictures [fullHealth,currentHealth]
+
+renderAll :: RenderData -> IO Picture
+renderAll rd = do
+    grass <- renderGrass rd
+    gobs <- renderGoblins rd
+    return $ Pictures [grass, gobs]

@@ -14,10 +14,10 @@ testTumbleBy = execStateT (do
 
 testGraphics :: IO ()
 testGraphics = do
-    world <- testTumbleBy
-    rd <- loadRenderData world
+    worldStolen <- testTumbleBy
+    rd <- loadRenderData worldStolen
     print rd
-    playIO FullScreen (makeColor 0 0 0 1) 1 rd renderGrass (\e -> \r -> return rd) (\f -> \r -> return rd)
+    playIO FullScreen (makeColor 0 0 0 1) 1 rd renderAll (\_ -> \_ -> return rd) (\_ -> \_ -> return rd)
 
 main :: IO ()
 main = do
