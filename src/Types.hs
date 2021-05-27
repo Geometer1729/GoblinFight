@@ -52,9 +52,9 @@ data Creature = Creature{
   _speed               :: Int,
   _frightened          :: Int,
   _location            :: Square,
-  _refDC               :: Int,
-  _fortDC              :: Int,
-  _willDC              :: Int,
+  _ref                 :: Int,
+  _fort                :: Int,
+  _will                :: Int,
   _athletics           :: Int,
   _acrobatics          :: Int,
   _intimidate          :: Int,
@@ -90,12 +90,28 @@ data World = World{
    _globalInititive :: [CUID],
    _nextCuid        :: CUID,
    _actionsLeft     :: Int,
+   _ais             :: M.Map Int AI, -- maps teams to AIs
    _mapen           :: Int  -- 0 1 or 2 (rather than 0 5 or 10)
-    } deriving Show
-
-
+    }
 
 makeLenses ''Attack
 makeLenses ''CSpecific
 makeLenses ''Creature
 makeLenses ''World
+
+instance Show World where
+  show w = unlines [ "World state:"
+                   , "Squares:"             ++ show ( w^.squares         )
+                   , "IDLookup:"            ++ show ( w^.cresById        )
+                   , "Inititive:"           ++ show ( w^.globalInititive )
+                   , "actions left:"        ++ show ( w^.actionsLeft     )
+                   , "multi attack penalty" ++ show ( w^.mapen           ) ]
+
+modToDC :: Lens' a Int -> Lens' a Int
+modToDC l = l . lens (+10) (\x _ -> x-10)
+
+refDC,fortDC,willDC :: Lens' Creature Int
+refDC  = modToDC ref
+fortDC = modToDC fort
+willDC = modToDC will
+

@@ -25,7 +25,8 @@ defWorld = World{
   _globalInititive = [],
   _nextCuid        = 0,
   _actionsLeft     = 3,
-  _mapen           = 0
+  _mapen           = 0,
+  _ais             = M.empty
                 }
 
 defGob :: Creature
@@ -53,9 +54,9 @@ defGob = Creature{
                         } ],
   _prone      = True,
   _ammo       = M.fromList [("arrow",10)],
-  _refDC      = 17,
-  _fortDC     = 15,
-  _willDC     = 13,
+  _ref        = 7,
+  _fort       = 5,
+  _will       = 3,
   _athletics  = 2,
   _acrobatics = 5,
   _intimidate = 1,

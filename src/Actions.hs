@@ -10,6 +10,8 @@ import Control.Monad.State
 import Data.Maybe
 import System.Random
 
+import qualified Data.Map as M
+
 demote :: CheckRes -> CheckRes
 demote res = toEnum $ max 0 (fromEnum res -1)
 
@@ -41,10 +43,9 @@ tryTumble tumbling tumbled = if tumbling ^. team  == tumbled ^. team
                                 then return True
                                 else passes <$> check (tumbling ^. acrobatics) (tumbled ^. refDC)
 
-
 doAction :: CUID -> Action -> PF2E ()
-
 doAction cid Move{moveActions=actions,movePath=path} = do
+  actionsLeft -= actions
   cre <- lookupCre cid
   guard $ and $ zipWith neighbor (cre ^. location:path) path
   tumbleCount  <- length . catMaybes <$> mapM use [squares . at loc | loc <- path ]
@@ -52,12 +53,15 @@ doAction cid Move{moveActions=actions,movePath=path} = do
   doMoveHelp cid path
 
 doAction cid Step{stepDest=dest} = do
+  actionsLeft -= 1
   cre <- lookupCre cid
   guard $ neighbor (cre ^. location) dest
   Nothing <- use $ squares . at dest
   creTP cid dest
 
 doAction cid Strike{strikeIndex=i,strikeTarget=t} = do
+  actionsLeft -= 1
+  mapen       += 1
   cre <- lookupCre cid
   let attack = (cre ^. attacks) !! i
   mapen' <- use mapen :: PF2E Int
@@ -85,12 +89,15 @@ doAction cid Strike{strikeIndex=i,strikeTarget=t} = do
   mapM_ (`dealDamage` targetCid) maybeDamage
 
 doAction cid DropProne = do
+  actionsLeft -= 1
   cresById . at cid . _Just . prone .= True
 
 doAction cid Stand = do
+  actionsLeft -= 1
   cresById . at cid . _Just . prone .= False
 
 doAction cid Escape = do
+  actionsLeft -= 1
   cre <- lookupCre cid
   case cre ^. grappledBy of
     Just (grapplerID,dc) -> do
@@ -100,6 +107,7 @@ doAction cid Escape = do
     Nothing -> error "escape acction used by un grappled creature"
 
 doAction cid Grapple{ grapTarget = targetSq } = do
+  actionsLeft -= 1
   cre <- lookupCre cid
   Just targetId <- use $ squares . at targetSq
   target   <- lookupCre targetId
@@ -107,6 +115,7 @@ doAction cid Grapple{ grapTarget = targetSq } = do
   when (passes res) $ cresById . ix targetId . grappledBy .= Just (cid,10 + cre ^. athletics)
 
 doAction cid Demoralize{ demoralizeTarget = targetSq } = do
+  actionsLeft -= 1
   cre <- lookupCre cid
   Just targetId <- use $ squares . at targetSq
   target <- lookupCre targetId
@@ -125,6 +134,15 @@ dealDamage (dType,dDice) cid = do
   let def  = cre ^. defenses . at dType
   let dVal' = appDef def dVal
   cresById . at cid . _Just . hp -= dVal'
+  cre' <- lookupCre cid -- new cre post damage
+  let dead = cre' ^. hp < 0
+  when dead $ removeCre cid
+
+removeCre :: CUID -> PF2E ()
+removeCre cid = do
+  cresById . at cid .= Nothing
+  squares         %= M.filter (/= cid)
+  globalInititive %=   filter (/= cid)
 
 appDef :: Maybe DefenseType -> Int -> Int
 appDef Nothing           = id
