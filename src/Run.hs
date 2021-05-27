@@ -2,10 +2,11 @@ module Run where
 
 import Types
 import Actions
-import AI
 
 import Control.Lens
 import Control.Monad.State
+import System.Process
+import Control.Monad.Trans
 
 step :: PF2E ()
 step = do
@@ -33,4 +34,8 @@ runAction = do
    act <- get >>= runAI aiUp
    doAction cid act
 
+runAI :: AI -> World -> PF2E Action
+runAI (Native f)        w = return $ f w
+runAI CLI               w = lift $ print w >> readLn
+runAI (Executable path) w = lift $ read <$> readProcess path [] (show w)
 
