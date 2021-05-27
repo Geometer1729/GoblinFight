@@ -13,13 +13,17 @@ import Data.Maybe
 
 import qualified Data.Map as M
 
+--all textures stored on disk as 512x512 pixels
 data RenderData = RenderData {
                     _world       :: World,
                     _battlefield :: [Square],
                     _grassPic    :: Picture,
                     _gobPic      :: Picture,
                     _screenWidth :: Int,
-                    _screenHeight :: Int
+                    _screenHeight :: Int,
+                    _globalZoom  :: Int,
+                    _globalPan   :: (Int,Int),
+                    _defaultImageSize :: Int
                   }
 
 makeLenses ''RenderData
@@ -45,7 +49,10 @@ loadRenderData w = do
         _grassPic = fromJust grassMaybe,
         _gobPic = fromJust gobMaybe,
         _screenWidth = width,
-        _screenHeight = height
+        _screenHeight = height,
+        _globalZoom = 32,
+        _globalPan = (0,0),
+        _defaultImageSize = 512
     }
 
 
@@ -55,3 +62,22 @@ renderBackground rd = let w = fromIntegral $ rd ^. screenWidth
                           empty = Polygon [(0,0),(w,0),(w,h),(0,h)]
                           background = Color (makeColor 0.2 0.2 0.2 1.0) empty
                       in return background
+
+renderGrass :: RenderData -> IO Picture
+renderGrass rd = do
+    let tilesize = rd ^. globalZoom
+    let (gx,gy) = rd ^. globalPan
+    let scaleFactor = (fromIntegral $ rd ^. globalZoom) / (fromIntegral $ rd ^. defaultImageSize)
+    let grassRenders = [Translate (fromIntegral (x * tilesize + gx) ) (fromIntegral (y * tilesize + gy)) (Scale scaleFactor scaleFactor (rd ^. grassPic)) | (x,y) <- (rd ^. battlefield)]
+    return $ Pictures grassRenders
+
+coolAngle :: Float
+coolAngle = 4*pi/(1+sqrt 5)
+
+getTeamColor :: Int -> M.Map Int Color -> Color
+getTeamColor n cache = makeColor 0 0 0 1
+
+renderGoblins :: RenderData -> IO Picture
+renderGoblins rd = do
+   let gobs = M.elems $ rd ^. (world . cresById)
+   return undefined
