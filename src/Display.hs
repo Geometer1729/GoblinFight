@@ -13,6 +13,8 @@ import Data.Maybe
 
 import qualified Data.Map as M
 
+import Debug.Trace
+
 --all textures stored on disk as 512x512 pixels
 data RenderData = RenderData {
                     _world       :: World,
@@ -56,18 +58,11 @@ loadRenderData w = do
     }
 
 onSquare :: RenderData -> Picture -> Square -> Picture
-onSquare rd p (x,y) = 
+onSquare rd p (x,y) =
     let tilesize = rd ^. globalZoom
         (gx,gy) = rd ^. globalPan
         scaleFactor = (fromIntegral $ rd ^. globalZoom) / (fromIntegral $ rd ^. defaultImageSize)
-    in Translate (fromIntegral $ x * tilesize + gx) (fromIntegral $ y * tilesize + gy) (Scale scaleFactor scaleFactor p) 
-
-renderBackground :: RenderData -> IO Picture
-renderBackground rd = let w = fromIntegral $ rd ^. screenWidth
-                          h = fromIntegral $ rd ^. screenHeight
-                          empty = Polygon [(0,0),(w,0),(w,h),(0,h)]
-                          background = Color (makeColor 0.2 0.2 0.2 1.0) empty
-                      in return background
+    in Translate (fromIntegral $ x * tilesize + gx) (fromIntegral $ y * tilesize + gy) (Scale scaleFactor scaleFactor p)
 
 renderGrass :: RenderData -> IO Picture
 renderGrass rd = do
@@ -81,7 +76,8 @@ getTeamColor n = let
   coolAngle = tau/phi
   angle = fromIntegral n * coolAngle
   scaledCos x = (cos x + 1) /2
-    in makeColor (scaledCos angle) (scaledCos angle+tau/3) (scaledCos angle-tau/3) 1
+  color = makeColor (scaledCos angle) (scaledCos $ angle+tau/3) (scaledCos $ angle-tau/3) 1
+    in traceShow (n,color) $ color
 
 renderGoblins :: RenderData -> IO Picture
 renderGoblins rd = do

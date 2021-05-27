@@ -17,7 +17,7 @@ testGraphics = do
     worldStolen <- testTumbleBy
     rd <- loadRenderData worldStolen
     print rd
-    playIO FullScreen (makeColor 0 0 0 1) 1 rd renderAll (\_ -> \_ -> return rd) (\_ -> \_ -> return rd)
+    playIO (InWindow "test" (512,512) (0,0)) (makeColor 0 0 0 1) 1 rd renderAll (\_ -> \_ -> return rd) (\_ -> \_ -> return rd)
 
 main :: IO ()
 main = do
