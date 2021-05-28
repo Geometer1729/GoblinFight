@@ -11,6 +11,7 @@ extra-source-files:
 dependencies:
 - base
 - containers
+- deepseq
 - flow
 - gloss
 - gloss-juicy

@@ -1,13 +1,18 @@
 {-# LANGUAGE
    TemplateHaskell
   ,RankNTypes
+  ,DeriveGeneric
+  ,DeriveAnyClass
 #-}
 
 module Types where
 
+import GHC.Generics (Generic,Generic1)
+import Control.Concurrent
 import Control.Lens
 import Control.Monad.State
 import Data.Set
+import Control.DeepSeq
 
 import qualified Data.Map as M
 
@@ -27,11 +32,12 @@ data Action =
   | Escape
   | Grapple{ grapTarget :: Square }
   | Demoralize{ demoralizeTarget :: Square }
-  deriving Show
+  deriving (Generic,NFData,Show)
 
 data AI = Native (World -> Action)
         | Executable FilePath
         | CLI -- handle through the shell the program was launched from
+        | Gloss -- handled through gloss
 
 data Attack = Attack{
   _bonus    :: (Int,Int,Int),
@@ -94,7 +100,8 @@ data World = World{
    _nextCuid        :: CUID,
    _actionsLeft     :: Int,
    _ais             :: M.Map Int AI, -- maps teams to AIs
-   _mapen           :: Int  -- 0 1 or 2 (rather than 0 5 or 10)
+   _mapen           :: Int,  -- 0 1 or 2 (rather than 0 5 or 10)
+   _aiActionAwait   :: Maybe (MVar Action)
     }
 
 makeLenses ''Attack

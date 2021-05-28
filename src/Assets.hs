@@ -26,7 +26,8 @@ defWorld = World{
   _nextCuid        = 0,
   _actionsLeft     = 3,
   _mapen           = 0,
-  _ais             = M.empty
+  _ais             = M.empty,
+  _aiActionAwait   = Nothing
                 }
 
 defGob :: Creature
