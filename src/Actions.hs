@@ -1,11 +1,15 @@
-{-# LANGUAGE MultiWayIf,RankNTypes #-}
+{-# LANGUAGE
+  MultiWayIf
+ ,RankNTypes
+#-}
 
 module Actions where
 
 import Dice
 import Types
 
-import Control.Lens
+import Control.Lens hiding ((.>))
+import Flow
 import Control.Monad.State
 import Data.Maybe
 import System.Random
@@ -85,6 +89,10 @@ doAction cid Strike{strikeIndex=i,strikeTarget=t} = do
   rangePen <- case attack ^. range of
                  Simple ar -> guard (r < ar) $> 0
                  Increment ri -> guard (r < 6 * ri) $> 2 * (r `div` ri)
+
+  isFlanking <- checkFlanking cid targetCid
+  let targFlatFooted = isJust (target ^. grappledBy ) || target ^. prone || isFlanking
+      tac = (target ^. ac) - (target ^. frightened) - if targFlatFooted then 2 else 0
   res <- check (bonus' - rangePen) (target ^. ac)
   let maybeDamage = case res of
                  CritSuc -> Just $ attack ^. critDmg
@@ -132,6 +140,26 @@ doAction cid Demoralize{ demoralizeTarget = targetSq } = do
     Suc      -> cresById . ix targetId . frightened %= max 1
     CritSuc  -> cresById . ix targetId . frightened %= max 2
 
+checkFlanking :: CUID -> CUID -> PF2E Bool
+checkFlanking cid1 cid2 = do
+  c1 <- lookupCre cid1
+  c2 <- lookupCre cid2
+  let l1 = c1 ^. location
+      l2 = c2 ^. location
+      fos = flankOptions l1 l2
+  flankerids <- catMaybes <$> mapM (\fo -> use $ squares . at fo) fos :: PF2E [CUID]
+  flankers <- mapM lookupCre flankerids
+  return $ any (\c -> c ^. team == c1 ^. team) flankers
+
+flankOptions :: Square -> Square -> [Square]
+flankOptions (x1,y1) (x2,y2) = let
+  dx = x2 - x1
+  dy = y2 - y1
+    in [(x2+dx,y2+dx)]
+-- This will evantually be updated to handle reach
+-- and large+ creatures correctly
+-- that's why it uses the list type even though it always returns 1 square
+
 dealDamage :: Damage -> CUID -> PF2E ()
 dealDamage (dType,dDice) cid = do
   dVal <- roll dDice
@@ -148,6 +176,14 @@ removeCre cid = do
   cresById . at cid .= Nothing
   squares         %= M.filter (/= cid)
   globalInititive %=   filter (/= cid)
+  cresById . each . grappledBy %= filterMaybe (fst .> (/= cid))
+
+filterMaybe :: (a -> Bool) -> Maybe a -> Maybe a
+filterMaybe pred (Just a)
+  | pred a = Just a
+filterMaybe _ _ = Nothing
+--filterMaybe pred m = m >>= guard . pred >> m
+-- works but seems less readable
 
 appDef :: Maybe DefenseType -> Int -> Int
 appDef Nothing           = id
@@ -191,4 +227,19 @@ creTP cid dest = do
   squares  . at src  .= Nothing
   squares  . at dest .= Just cid
   cresById . at cid  .= Just cre'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

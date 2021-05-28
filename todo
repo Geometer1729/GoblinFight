@@ -1,0 +1,12 @@
+
+track critical success on grapples
+guard against move actions by grappled creatures
+
+track the effects of the frightened condition
+apply end of tern effects (decrease frightened take eventually things like continuous damage)
+
+add release grapple action
+
+eventually add reactions
+
+
