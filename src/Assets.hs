@@ -44,13 +44,15 @@ defGob = Creature{
                   _bonus    = (8,4,0),
                   _dmg      = (S,d6),
                   _critDmg  = (S,2 d6),
-                  _ammoType = Nothing
+                  _ammoType = Nothing,
+                  _range    = Simple 5
                         }
                 , Attack{
                   _bonus    = (8,3,-2),
                   _dmg      = (P,d6),
                   _critDmg  = (P,2 d6 + d10),
-                  _ammoType = Just "arrow"
+                  _ammoType = Just "arrow",
+                  _range    = Increment 20
                         } ],
   _prone      = True,
   _ammo       = M.fromList [("arrow",10)],

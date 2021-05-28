@@ -9,6 +9,7 @@ import Control.Lens
 import Control.Monad.State
 import Data.Maybe
 import System.Random
+import Data.Functor
 
 import qualified Data.Map as M
 
@@ -69,11 +70,9 @@ doAction cid Strike{strikeIndex=i,strikeTarget=t} = do
       bonus' = case mapen' of
                  0 -> b0
                  1 -> b1
-                 2 -> b2
-                 _ -> error "invalid multi attack penalty"
+                 _ -> b2
   Just targetCid <- use $ squares . at t
   target <- lookupCre targetCid
-  res <- check bonus' (target ^. ac)
   case attack ^. ammoType of
     Just aType -> do
       let mLeft = cre ^. ammo . at aType
@@ -82,6 +81,11 @@ doAction cid Strike{strikeIndex=i,strikeTarget=t} = do
       guard $ left > 0
       cresById . ix cid . ammo . ix aType -= 1
     Nothing -> return ()
+  let r = linf (cre ^. location) (target ^. location)
+  rangePen <- case attack ^. range of
+                 Simple ar -> guard (r < ar) $> 0
+                 Increment ri -> guard (r < 6 * ri) $> 2 * (r `div` ri)
+  res <- check (bonus' - rangePen) (target ^. ac)
   let maybeDamage = case res of
                  CritSuc -> Just $ attack ^. critDmg
                  Suc     -> Just $ attack ^. dmg
@@ -111,6 +115,7 @@ doAction cid Grapple{ grapTarget = targetSq } = do
   cre <- lookupCre cid
   Just targetId <- use $ squares . at targetSq
   target   <- lookupCre targetId
+  guard $ neighbor (cre ^. location) (target ^. location)
   res <- check (cre ^. athletics) (target ^. fortDC)
   when (passes res) $ cresById . ix targetId . grappledBy .= Just (cid,10 + cre ^. athletics)
 
@@ -169,8 +174,12 @@ lookupCre cid = do
       Just cre -> return cre
       Nothing  -> error "lookup given invalid creature id"
 
+
+linf :: Square -> Square -> Int
+linf (x1,y1) (x2,y2) = 5 * max (abs (x1-x2)) (abs (y1-y2))
+
 neighbor :: Square -> Square -> Bool
-neighbor (x1,y1) (x2,y2) = max (abs (x1-x2)) (abs (y1-y2)) == 1
+neighbor a b = linf a b == 5
 
 -- should evantually take info about step vs move
 -- for reactions

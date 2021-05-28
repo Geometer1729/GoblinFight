@@ -37,7 +37,8 @@ data Attack = Attack{
   _bonus    :: (Int,Int,Int),
   _dmg      :: Damage,
   _ammoType :: Maybe String,
-  _critDmg  :: Damage
+  _critDmg  :: Damage,
+  _range    :: Range
                     }deriving Show
 
 data CheckRes = CritFail | Fail | Suc | CritSuc deriving(Enum)
@@ -84,6 +85,8 @@ data DefenseType = Immune | Resist Int | Vuln Int deriving Show
 
 data Dice = D Int | C Int | NOf Int Dice | Add Dice Dice | Mul Dice Dice | Sub Dice Dice deriving Show
 
+data Range = Simple Int | Increment Int deriving Show
+
 data World = World{
    _squares         :: M.Map Square CUID,
    _cresById        :: M.Map CUID Creature,
@@ -101,11 +104,11 @@ makeLenses ''World
 
 instance Show World where
   show w = unlines [ "World state:"
-                   , "Squares:"             ++ show ( w^.squares         )
-                   , "IDLookup:"            ++ show ( w^.cresById        )
-                   , "Inititive:"           ++ show ( w^.globalInititive )
-                   , "actions left:"        ++ show ( w^.actionsLeft     )
-                   , "multi attack penalty" ++ show ( w^.mapen           ) ]
+                   , "Squares: "              ++ show ( w^.squares         )
+                   , "IDLookup: "             ++ show ( w^.cresById        )
+                   , "Inititive: "            ++ show ( w^.globalInititive )
+                   , "actions left: "         ++ show ( w^.actionsLeft     )
+                   , "multi attack penalty: " ++ show ( w^.mapen           ) ]
 
 modToDC :: Lens' a Int -> Lens' a Int
 modToDC l = l . lens (+10) (\x _ -> x-10)
