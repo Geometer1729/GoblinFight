@@ -29,10 +29,10 @@ testGraphics = do
     w <- get2GobCLI
     rd <- loadRenderData w
     print rd
-    playIO (InWindow "test" (512,512) (0,0)) (makeColor 0 0 0 1) 1 rd renderAll eventHandle tick
+    playIO FullScreen (makeColor 0 0 0 1) 1 rd renderAll handleMouse (\_ -> \f -> return rd) --tick
 
-eventHandle :: Event -> RenderData -> IO RenderData
-eventHandle _event = return
+--eventHandle :: Event -> RenderData -> IO RenderData
+--eventHandle _event = return
 
 tick :: Float -> RenderData -> IO RenderData
 tick _duration = execStateT $ do
