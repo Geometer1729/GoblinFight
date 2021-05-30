@@ -15,6 +15,7 @@ import Data.Set
 import Control.DeepSeq
 
 import qualified Data.Map as M
+import qualified Data.Set as S
 
 type CUID = Int
 type Damage = (DamageType,Dice)
@@ -101,6 +102,7 @@ data Range = Simple Int | Increment Int deriving Show
 
 data World = World{
    _squares         :: M.Map Square CUID,
+   _battlefield     :: S.Set Square,
    _cresById        :: M.Map CUID Creature,
    _initTracker :: [CUID],
    _nextCuid        :: CUID,

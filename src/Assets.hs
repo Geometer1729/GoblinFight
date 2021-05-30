@@ -21,6 +21,7 @@ getNextCUID = do
 defWorld :: World
 defWorld = World{
   _squares         = M.empty,
+  _battlefield     = S.empty,
   _cresById        = M.empty,
   _initTracker = [],
   _nextCuid        = 0,
@@ -80,6 +81,7 @@ register cre = do
 place :: CUID -> Square -> PF2E ()
 place cid sq = do
   squares . at sq .= Just cid
+  battlefield %= S.insert sq
   cresById . at cid . _Just . location .= sq
 
 
