@@ -25,10 +25,9 @@ data RenderData = RenderData {
                     _screenWidth :: Int,
                     _screenHeight :: Int,
                     _globalZoom  :: Int,
-                    _globalPan   :: (Int,Int),
+                    _globalPan   :: (Float,Float),
                     _defaultImageSize :: Int,
                     _leftMouseDown :: Bool,
-                    _lastDragPos :: (Float,Float),
                     _selectedSquare :: Maybe Square
                   } deriving (Show)
 
@@ -60,7 +59,6 @@ loadRenderData w = do
         _globalPan = (0,0),
         _defaultImageSize = 512,
         _leftMouseDown = False,
-        _lastDragPos = (0,0),
         _selectedSquare = Nothing
     }
 
@@ -69,7 +67,7 @@ onSquare rd p (x,y) =
     let tilesize = rd ^. globalZoom
         (gx,gy) = rd ^. globalPan
         scaleFactor = (fromIntegral $ rd ^. globalZoom) / (fromIntegral $ rd ^. defaultImageSize)
-    in Translate (fromIntegral $ x * tilesize + gx) (fromIntegral $ y * tilesize + gy) (Scale scaleFactor scaleFactor p)
+    in Translate (gx + (fromIntegral $ x * tilesize)) (gy + (fromIntegral $ y * tilesize)) (Scale scaleFactor scaleFactor p)
 
 renderGrass :: RenderData -> IO Picture
 renderGrass rd = do
@@ -111,30 +109,32 @@ renderAll rd = do
 
 handleMouse :: Event -> RenderData -> IO RenderData
 handleMouse (EventKey key state mods (keyx,keyy)) rd =
-    trace "event" $ case state of
+    case state of
         Up -> keyUp key (keyx,keyy) rd 
         Down -> keyDown key (keyx,keyy) rd
+handleMouse (EventMotion (mox,moy)) rd = mouseMovement (mox,moy) rd
 handleMouse _ rd = return rd
 
+
 keyUp :: Key -> (Float,Float) -> RenderData-> IO RenderData
-keyUp (MouseButton mb) (x,y) rd = return rd
-keyUp (MouseButton LeftButton) (x,y) rd = do
-    let newrd = rd & leftMouseDown .~ False
-    return rd 
+keyUp (MouseButton LeftButton) (x,y) rd = trace "mouse up" $ return (rd & leftMouseDown .~ False)
 keyUp _ _ rd = return rd
 
 keyDown :: Key -> (Float,Float) -> RenderData -> IO RenderData
-keyDown (MouseButton mb) (x,y) rd = return rd
-keyDown (MouseButton LeftButton) (x,y) rd = do
-    --print (screenToSquare (x,y) rd)
-    let newrd = rd & leftMouseDown .~ True
-    return newrd
+keyDown (MouseButton LeftButton) (x,y) rd = trace "mouse down" $ return (rd & leftMouseDown .~ True)
 keyDown _ _ rd = return rd
+
+mouseMovement :: (Float,Float) -> RenderData -> IO RenderData
+mouseMovement (x,y) rd =
+        let pan_new = if rd ^. leftMouseDown
+                        then (x,y)
+                        else rd ^. globalPan
+        in traceShow (rd ^. globalPan) $ return (rd & globalPan .~ pan_new)
 
 screenToSquare :: (Float,Float) -> RenderData -> Square
 screenToSquare (x,y) rd = 
     let (panx,pany) = rd ^. globalPan
         zoom = fromIntegral $ rd ^. globalZoom
-        rx = round $ (x - fromIntegral panx)/zoom
-        ry = round $ (y - fromIntegral pany)/zoom
+        rx = round $ (x - panx)/zoom
+        ry = round $ (y - pany)/zoom
     in (rx,ry)

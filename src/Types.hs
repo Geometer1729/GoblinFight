@@ -23,6 +23,8 @@ type PF2E = StateT World IO
 type Square = (Int,Int)
 addPair :: (Num a) => (a,a) -> (a,a) -> (a,a)
 addPair (x,y) (w,z) = (x+w,y+z)
+negPair :: (Num a) => (a,a) -> (a,a)
+negPair (x,y) = (-x,-y)
 type Stat = Lens' Creature Int
 
 data Action =
