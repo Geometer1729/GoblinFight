@@ -84,6 +84,10 @@ place cid sq = do
   battlefield %= S.insert sq
   cresById . at cid . _Just . location .= sq
 
+placeSquare :: Square -> PF2E ()
+placeSquare sq = do
+    battlefield %= S.insert sq
+
 
 rollInitCre :: Creature -> PF2E Int
 rollInitCre cre = do
@@ -104,6 +108,11 @@ init2Gob = do
   g2 <- register defGob
   cresById . at g2 . _Just . team .= 2
   place g2 (0,1)
+  placeSquare (1,1)
+  placeSquare (2,1)
+  placeSquare (2,2)
+  placeSquare (1,2)
+  placeSquare (3,1)
   rollInit
 
 
