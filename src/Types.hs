@@ -71,7 +71,7 @@ data Creature = Creature{
   _ammo                :: M.Map String Int,
   _defenses            :: Defenses,
   _unarmed             :: Int, -- unarmed attack is needed for escape checks
-  _grappledBy          :: Maybe (CUID,Int), -- creature and escape DC
+  _grappledBy          :: Maybe CUID, -- creature and escape DC
   _creatureSpecific    :: CSpecific
                         } deriving Show
 
