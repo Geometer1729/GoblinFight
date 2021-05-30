@@ -16,15 +16,14 @@ simple w = let
   Just cre = w ^. cresById . at cid
   loc = cre ^. location
   as = posibleAttacks w
-    in case as of
-         (a:_) -> a
-         [] -> case closestEnemy w of
-                 Just esq -> case cre ^. grappledBy of
-                               Nothing -> moveToward w esq
-                               Just _  -> Escape
-                               -- it probably shouldn't be possible to have no one to attack
-                               -- and still be grappled, but I added the check anyway
-                 Nothing -> Stand -- if there are no surviving enemies burn actions
+    in case cre ^. grappledBy of
+         Just _ -> Escape
+         Nothing -> case as of
+           (a:_) -> a
+           [] -> case closestEnemy w of
+                  Just esq -> moveToward w esq
+                  Nothing  -> Stand
+ -- if there are no surviving enemies burn actions
 
 moveToward :: World -> Square -> Action
 moveToward w dest = let

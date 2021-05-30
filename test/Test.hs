@@ -10,8 +10,6 @@ import AIS
 import Control.Monad.State
 import Graphics.Gloss.Interface.IO.Game
 
-import Debug.Trace
-
   {-
 testTumbleBy :: IO World
 testTumbleBy = execStateT (do
