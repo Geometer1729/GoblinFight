@@ -22,7 +22,7 @@ step = do
 
 stepInit :: PF2E ()
 stepInit = do
-  globalInititive %= rotate
+  initTracker %= rotate
   actionsLeft .= 3 -- will need to check for haste eventually
   mapen .= 0
 
@@ -36,11 +36,11 @@ runAction =
       Just mvar ->
         lift (tryTakeMVar mvar) >>= \case
           Just action -> do
-            cid <- head <$> use globalInititive
+            cid <- head <$> use initTracker
             doAction cid action
           Nothing -> return ()
       Nothing -> do
-       cid <- head <$> use globalInititive
+       cid <- head <$> use initTracker
        cre <- lookupCre cid
        let teamUp = cre ^. team
        Just aiUp <- use $ ais . at teamUp

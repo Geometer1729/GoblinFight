@@ -96,7 +96,7 @@ data Range = Simple Int | Increment Int deriving Show
 data World = World{
    _squares         :: M.Map Square CUID,
    _cresById        :: M.Map CUID Creature,
-   _globalInititive :: [CUID],
+   _initTracker :: [CUID],
    _nextCuid        :: CUID,
    _actionsLeft     :: Int,
    _ais             :: M.Map Int AI, -- maps teams to AIs
@@ -113,7 +113,7 @@ instance Show World where
   show w = unlines [ "World state:"
                    , "Squares: "              ++ show ( w^.squares         )
                    , "IDLookup: "             ++ show ( w^.cresById        )
-                   , "Inititive: "            ++ show ( w^.globalInititive )
+                   , "Inititive: "            ++ show ( w^.initTracker )
                    , "actions left: "         ++ show ( w^.actionsLeft     )
                    , "multi attack penalty: " ++ show ( w^.mapen           ) ]
 

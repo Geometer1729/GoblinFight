@@ -176,7 +176,7 @@ removeCre :: CUID -> PF2E ()
 removeCre cid = do
   cresById . at cid .= Nothing
   squares         %= M.filter (/= cid)
-  globalInititive %=   filter (/= cid)
+  initTracker %=   filter (/= cid)
   cresById . each . grappledBy %= filterMaybe (/= cid)
 
 filterMaybe :: (a -> Bool) -> Maybe a -> Maybe a

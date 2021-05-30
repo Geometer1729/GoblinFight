@@ -10,7 +10,7 @@ import Data.List
 
 simple :: World -> Action
 simple w = let
-  cid = w ^. globalInititive . to head
+  cid = w ^. initTracker . to head
   Just cre = w ^. cresById . at cid
   loc = cre ^. location
   as = posibleAttacks w
@@ -22,7 +22,7 @@ simple w = let
 
 moveToward :: World -> Square -> Action
 moveToward w dest = let
-  cid = w ^. globalInititive . to head
+  cid = w ^. initTracker . to head
   Just cre = w ^. cresById . at cid
   loc = cre ^. location
   spaces = (cre ^. speed) `div` 5
@@ -45,7 +45,7 @@ genPath n (x,y) dest@(x',y') = let
 
 posibleAttacks :: World -> [Action]
 posibleAttacks w = do
-  let cid = w ^. globalInititive . to head
+  let cid = w ^. initTracker . to head
   let cre = fromJust $ w ^. cresById . at cid
   (attack,attackIndex)  <- zip (cre ^. attacks) [0..]
   let r  = attack ^. range
@@ -66,7 +66,7 @@ maxRange (Increment n) = 6*n
 
 closestEnemy :: World -> Maybe Square
 closestEnemy w = let
-  cid = w ^. globalInititive . to head
+  cid = w ^. initTracker . to head
   cre = fromJust $ w ^. cresById . at cid
   loc = cre ^. location
   seEnemies :: [Square]
