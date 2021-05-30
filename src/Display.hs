@@ -22,6 +22,7 @@ data RenderData = RenderData {
                     _world       :: World,
                     _grassPic    :: Picture,
                     _gobPic      :: Picture,
+                    _selectPic   :: Picture,
                     _screenWidth :: Int,
                     _screenHeight :: Int,
                     _globalZoom  :: Int,
@@ -48,11 +49,13 @@ loadRenderData :: World -> IO RenderData
 loadRenderData w = do
     grassMaybe <- loadJuicyPNG "res/grass.png"
     gobMaybe <- loadJuicyPNG "res/gob.png"
+    selectMaybe <- loadJuicyPNG "res/select.png"
     (width, height) <- getScreenSize
     return RenderData{
         _world = w,
         _grassPic = fromJust grassMaybe,
         _gobPic = fromJust gobMaybe,
+        _selectPic = fromJust selectMaybe,
         _screenWidth = width,
         _screenHeight = height,
         _globalZoom = 128,
@@ -101,11 +104,17 @@ renderGoblinHealthbar rd g =
         currentHealth = Translate (-((maxhp-curhp)/(2*maxhp))*healthbarWidth) 0 $  Color teamcolor (rectangleSolid (healthbarWidth * (curhp/maxhp)) healthbarHeight)
     in Translate 0 (0.35*(fromIntegral $ rd ^. defaultImageSize)) $ Pictures [fullHealth,currentHealth]
 
+renderGUI :: RenderData -> IO Picture
+renderGUI rd | null $ rd ^. selectedSquare = return Blank
+             | otherwise = let sq = fromJust (rd ^. selectedSquare)
+                           in return $ onSquare rd (rd ^. selectPic) sq
+
 renderAll :: RenderData -> IO Picture
 renderAll rd = do
     grass <- renderGrass rd
     gobs <- renderGoblins rd
-    return $ Pictures [grass, gobs]
+    overlay <- renderGUI rd
+    return $ Pictures [grass, gobs, overlay]
 
 
 handleMouse :: Event -> RenderData -> IO RenderData
@@ -122,7 +131,14 @@ keyUp (MouseButton LeftButton) (x,y) rd = trace "mouse up" $ return (rd & leftMo
 keyUp _ _ rd = return rd
 
 keyDown :: Key -> (Float,Float) -> RenderData -> IO RenderData
-keyDown (MouseButton LeftButton) (x,y) rd = trace "mouse down" $ return (rd & leftMouseDown .~ True & lastDragPos .~ (x,y))
+keyDown (MouseButton LeftButton) (x,y) rd = do
+    return (rd & leftMouseDown .~ True & lastDragPos .~ (x,y))
+keyDown (MouseButton RightButton) (x,y) rd = do
+        let square = screenToSquare (x,y) rd
+            selectrd = if square `S.member` (rd ^. world . battlefield) 
+                then rd & selectedSquare .~ Just square
+                else rd & selectedSquare .~ Nothing
+        return selectrd
 keyDown _ _ rd = return rd
 
 mouseMovement :: (Float,Float) -> RenderData -> IO RenderData
