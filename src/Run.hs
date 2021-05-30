@@ -7,18 +7,23 @@ import Types
 
 import Control.Concurrent
 import Control.Concurrent.MVar
-import Control.Lens
+import Control.Lens hiding ((.>))
 import Control.Monad.State
 import Control.Monad.Trans
 import Control.DeepSeq
+import Flow
 import System.Process
 
 step :: PF2E ()
 step = do
   left <- use actionsLeft
   if left == 0
-     then stepInit
+     then endOfTurn >> stepInit
      else runAction
+
+endOfTurn :: PF2E ()
+endOfTurn = do
+  cresById . each . frightened %= (`subtract` 1) .> (max 0)
 
 stepInit :: PF2E ()
 stepInit = do
