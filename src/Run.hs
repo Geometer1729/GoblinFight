@@ -36,6 +36,8 @@ runAction =
       Just mvar ->
         lift (tryTakeMVar mvar) >>= \case
           Just action -> do
+            lift $ putStrLn "Action played:"
+            lift $ print action
             cid <- head <$> use initTracker
             doAction cid action
             aiActionAwait .= Nothing
