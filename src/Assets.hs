@@ -88,7 +88,6 @@ placeSquare :: Square -> PF2E ()
 placeSquare sq = do
     battlefield %= S.insert sq
 
-
 rollInitCre :: Creature -> PF2E Int
 rollInitCre cre = do
   dieRoll <- roll d20
@@ -114,5 +113,4 @@ init2Gob = do
   placeSquare (1,2)
   placeSquare (3,1)
   rollInit
-
 
