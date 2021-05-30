@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module ActionParser where
 
 import Types
@@ -37,7 +39,9 @@ actionParser :: ReadP Action
 actionParser = choice [moveParser,stepParser,strikeParser,dropProneParser,standParser,escapeParser,grappleParser,demoralizeParser]
 
 parseInt :: ReadP Int
-parseInt = read <$> munch isDigit
+parseInt = munch isDigit >>= \case
+  [] -> pfail
+  ds -> return $ read ds
 
 parseSq :: ReadP Square
 parseSq = (,) <$> (optional (char '(') *> parseInt <* char ',') <*> (parseInt <* optional (char ')') )

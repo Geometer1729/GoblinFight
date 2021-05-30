@@ -51,7 +51,7 @@ posibleAttacks w = do
   let cre = fromJust $ w ^. cresById . at cid
   (attack,attackIndex)  <- zip (cre ^. attacks) [0..]
   let r  = attack ^. range
-  targetSq <- inRange r
+  targetSq <- (addPair $ cre ^. location ) <$> inRange r
   targetId <- maybeToList $ w ^. squares . at targetSq
   target <-   maybeToList $ w ^. cresById . at targetId
   guard $ target ^. team /= cre ^. team -- friendly fire is cringe

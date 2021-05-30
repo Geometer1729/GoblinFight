@@ -30,7 +30,7 @@ testGraphics = do
     w <- get2GobCLI
     rd <- loadRenderData w
     print rd
-    playIO FullScreen (makeColor 0 0 0 1) 30 rd renderAll handleMouse (\_ -> \f -> return rd) --tick
+    playIO FullScreen (makeColor 0 0 0 1) 30 rd renderAll handleMouse tick
 
 --eventHandle :: Event -> RenderData -> IO RenderData
 --eventHandle _event = return
