@@ -82,7 +82,6 @@ place cid sq = do
   squares . at sq .= Just cid
   cresById . at cid . _Just . location .= sq
 
-
 rollInitCre :: Creature -> PF2E Int
 rollInitCre cre = do
   dieRoll <- roll d20
@@ -103,5 +102,4 @@ init2Gob = do
   cresById . at g2 . _Just . team .= 2
   place g2 (0,1)
   rollInit
-
 
