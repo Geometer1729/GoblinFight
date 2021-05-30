@@ -60,6 +60,7 @@ loadRenderData w = do
         _globalPan = (0,0),
         _defaultImageSize = 512,
         _leftMouseDown = False,
+        _lastDragPos = (0,0),
         _selectedSquare = Nothing
     }
 
