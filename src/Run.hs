@@ -41,6 +41,7 @@ runAction =
       Just mvar ->
         lift (tryTakeMVar mvar) >>= \case
           Just action -> do
+            glossTurn .= False
             lift $ putStrLn "Action played:"
             lift $ print action
             cid <- head <$> use initTracker
@@ -72,7 +73,8 @@ runAI (Executable path) = do
   mvar <- lift newEmptyMVar
   lift $ forkIO $ readProcess path [] (show w) <&> read >>= putMVar mvar
   aiActionAwait .= Just mvar
-runAI _ = do
+runAI Gloss = do
   mvar <- lift newEmptyMVar
+  glossTurn .= True
   aiActionAwait .= Just mvar
 
