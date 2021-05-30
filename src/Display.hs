@@ -28,6 +28,7 @@ data RenderData = RenderData {
                     _globalPan   :: (Float,Float),
                     _defaultImageSize :: Int,
                     _leftMouseDown :: Bool,
+                    _lastDragPos :: (Float,Float),
                     _selectedSquare :: Maybe Square
                   } deriving (Show)
 
@@ -58,6 +59,7 @@ loadRenderData w = do
         _globalPan = (0,0),
         _defaultImageSize = 512,
         _leftMouseDown = False,
+        _lastDragPos = (0,0),
         _selectedSquare = Nothing
     }
 
@@ -120,15 +122,15 @@ keyUp (MouseButton LeftButton) (x,y) rd = trace "mouse up" $ return (rd & leftMo
 keyUp _ _ rd = return rd
 
 keyDown :: Key -> (Float,Float) -> RenderData -> IO RenderData
-keyDown (MouseButton LeftButton) (x,y) rd = trace "mouse down" $ return (rd & leftMouseDown .~ True)
+keyDown (MouseButton LeftButton) (x,y) rd = trace "mouse down" $ return (rd & leftMouseDown .~ True & lastDragPos .~ (x,y))
 keyDown _ _ rd = return rd
 
 mouseMovement :: (Float,Float) -> RenderData -> IO RenderData
 mouseMovement (x,y) rd =
         let pan_new = if rd ^. leftMouseDown
-                        then (x,y)
+                        then addPair (rd ^. globalPan) $ addPair (x,y) (negPair (rd ^. lastDragPos))
                         else rd ^. globalPan
-        in traceShow (rd ^. globalPan) $ return (rd & globalPan .~ pan_new)
+        in traceShow (rd ^. globalPan) $ return (rd & globalPan .~ pan_new & lastDragPos .~ (x,y))
 
 screenToSquare :: (Float,Float) -> RenderData -> Square
 screenToSquare (x,y) rd =
