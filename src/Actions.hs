@@ -17,6 +17,7 @@ import Flow
 import System.Random
 
 import qualified Data.Map as M
+import qualified Data.Set as S
 
 demote :: CheckRes -> CheckRes
 demote res = toEnum $ max 0 (fromEnum res -1)
@@ -213,6 +214,8 @@ doMoveHelp :: CUID -> [Square] -> PF2E ()
 doMoveHelp _ [] = return ()
 doMoveHelp cid (dest:rest) = do
   maybeTumbleID <- use $ squares . at dest :: PF2E (Maybe CUID)
+  bf <- use battlefield
+  guard $ dest `S.member` bf
   cre <- lookupCre cid
   case maybeTumbleID of
     Just tumbledID -> do
