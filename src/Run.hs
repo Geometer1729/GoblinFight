@@ -38,6 +38,7 @@ runAction =
           Just action -> do
             cid <- head <$> use initTracker
             doAction cid action
+            aiActionAwait .= Nothing
           Nothing -> return ()
       Nothing -> do
        cid <- head <$> use initTracker

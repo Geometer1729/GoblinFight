@@ -8,11 +8,12 @@ module Actions where
 import Dice
 import Types
 
+import Control.Applicative
 import Control.Lens hiding ((.>))
 import Control.Monad.State
+import Data.Functor
 import Data.Maybe
 import System.Random
-import Data.Functor
 
 import qualified Data.Map as M
 
@@ -46,15 +47,15 @@ doAction :: CUID -> Action -> PF2E ()
 doAction cid Move{moveActions=actions,movePath=path} = do
   actionsLeft -= actions
   cre <- lookupCre cid
-  guard $ and $ zipWith neighbor (cre ^. location:path) path
+  guard ( and $ zipWith neighbor (cre ^. location:path) path ) <|> fail "invalid move path"
   tumbleCount  <- length . catMaybes <$> mapM use [squares . at loc | loc <- path ]
-  guard $ length path + tumbleCount <= actions * ( cre^.speed `div` 5 )
+  guard ( length path + tumbleCount <= actions * ( cre^.speed `div` 5 ) ) <|> fail "move path too long"
   doMoveHelp cid path
 
 doAction cid Step{stepDest=dest} = do
   actionsLeft -= 1
   cre <- lookupCre cid
-  guard $ neighbor (cre ^. location) dest
+  guard ( neighbor (cre ^. location) dest ) <|> fail "invalid step"
   Nothing <- use $ squares . at dest
   creTP cid dest
 
@@ -70,15 +71,16 @@ doAction cid Strike{strikeIndex=i,strikeTarget=t} = do
   case attack ^. ammoType of
     Just aType -> do
       let mLeft = cre ^. ammo . at aType
-      guard $ isJust mLeft
+      guard ( isJust mLeft ) <|> fail "ammo type lookup fail"
       let left = fromJust mLeft
-      guard $ left > 0
+      guard (left > 0) <|> fail "no ammo left to fire that"
       cresById . ix cid . ammo . ix aType -= 1
     Nothing -> return ()
   let r = linf (cre ^. location) (target ^. location)
   rangePen <- case attack ^. range of
-                 Simple ar -> guard (r < ar) $> 0
-                 Increment ri -> guard (r < 6 * ri) $> 2 * (r `div` ri)
+                 Simple ar -> ( guard (r <= ar) $> 0 )  <|> fail "can't reach target"
+                 Increment ri -> ( guard (r <= 6 * ri) $> 2 * (r `div` ri) )
+                      <|> fail " targetmore than 6 range incriments out"
 
   isFlanking <- checkFlanking cid targetCid
   let targFlatFooted = isJust (target ^. grappledBy ) || target ^. prone || isFlanking
@@ -107,14 +109,15 @@ doAction cid Escape = do
         grapler <- lookupCre grapplerID
         res <- check bon (grapler ^. grappleDC)
         when (passes res) $ cresById . ix cid . grappledBy .= Nothing
-    Nothing -> error "escape acction used by un grappled creature"
+    Nothing -> fail "escape acction used by un grappled creature"
 
 doAction cid Grapple{ grapTarget = targetSq } = do
   actionsLeft -= 1
   cre <- lookupCre cid
   Just targetId <- use $ squares . at targetSq
   target   <- lookupCre targetId
-  guard $ neighbor (cre ^. location) (target ^. location)
+  guard ( neighbor (cre ^. location) (target ^. location) ) <|> fail "grappled non-adjacent square"
+  -- creatures should have inate reach for grapple
   res <- check (cre ^. wF athletics) (target ^. wF fortDC)
   when (passes res) $ cresById . ix targetId . grappledBy .= Just cid
 
@@ -123,7 +126,7 @@ doAction cid Demoralize{ demoralizeTarget = targetSq } = do
   cre <- lookupCre cid
   Just targetId <- use $ squares . at targetSq
   target <- lookupCre targetId
-  guard $ targetId `notElem` (cre ^. demoralizeCooldowns )
+  guard ( targetId `notElem` (cre ^. demoralizeCooldowns ) ) <|> fail "demoralize creature in cooldown"
   res <- check (cre ^. wF intimidate) (target ^. wF willDC)
   case res of
     CritFail -> return ()

@@ -5,6 +5,7 @@ import Types
 import Display
 import Control.Lens
 import Run
+import AIS
 
 import Control.Monad.State
 import Graphics.Gloss.Interface.IO.Game
@@ -20,8 +21,8 @@ testTumbleBy = execStateT (do
 get2GobCLI :: IO World
 get2GobCLI = execStateT (do
   init2Gob
-  ais . at 1 .= Just CLI
-  ais . at 2 .= Just CLI
+  loadAI "cli" 1
+  loadAI "simple" 2
     ) defWorld
 
 testGraphics :: IO ()
@@ -29,7 +30,7 @@ testGraphics = do
     w <- get2GobCLI
     rd <- loadRenderData w
     print rd
-    playIO (InWindow "test" (512,512) (0,0)) (makeColor 0 0 0 1) 1 rd renderAll eventHandle tick
+    playIO (InWindow "test" (512,512) (0,0)) (makeColor 0 0 0 1) 30 rd renderAll eventHandle tick
 
 eventHandle :: Event -> RenderData -> IO RenderData
 eventHandle _event = return
