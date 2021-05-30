@@ -1,10 +1,6 @@
 
-track critical success on grapples
-guard against move actions by grappled creatures
-
-apply end of tern effects (decrease frightened take eventually things like continuous damage)
-
-add release grapple action
+apply end of turn effects (decrease frightened take eventually things like continuous damage)
 
 eventually add reactions
 
+grappling should use unarmed reach

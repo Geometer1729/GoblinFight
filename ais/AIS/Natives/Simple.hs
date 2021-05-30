@@ -1,6 +1,8 @@
 module AIS.Natives.Simple where
 
 import Types
+import Actions(linf)
+
 import Flow
 import Control.Lens hiding ((.>))
 import qualified Data.Map as M
@@ -17,7 +19,11 @@ simple w = let
     in case as of
          (a:_) -> a
          [] -> case closestEnemy w of
-                 Just esq -> moveToward w esq
+                 Just esq -> case cre ^. grappledBy of
+                               Nothing -> moveToward w esq
+                               Just _  -> Escape
+                               -- it probably shouldn't be possible to have no one to attack
+                               -- and still be grappled, but I added the check anyway
                  Nothing -> Stand -- if there are no surviving enemies burn actions
 
 moveToward :: World -> Square -> Action
@@ -31,7 +37,7 @@ moveToward w dest = let
 
 genPath :: Int -> Square -> Square -> [Square]
 genPath 0 _ _ = []
-genPath n src@(x,y) dest@(x',y') = let
+genPath n (x,y) dest@(x',y') = let
   dx = case compare x x' of
          LT -> 1
          EQ -> 0
@@ -41,7 +47,7 @@ genPath n src@(x,y) dest@(x',y') = let
          EQ -> 0
          GT -> -1
   next = (x+dx,y+dy)
-        in if src == dest
+        in if next == dest
               then []
               else next:genPath (n-1) next dest
 
@@ -51,7 +57,7 @@ posibleAttacks w = do
   let cre = fromJust $ w ^. cresById . at cid
   (attack,attackIndex)  <- zip (cre ^. attacks) [0..]
   let r  = attack ^. range
-  targetSq <- (addPair $ cre ^. location ) <$> inRange r
+  targetSq <- addPair (cre ^. location ) <$> inRange r
   targetId <- maybeToList $ w ^. squares . at targetSq
   target <-   maybeToList $ w ^. cresById . at targetId
   guard $ target ^. team /= cre ^. team -- friendly fire is cringe
@@ -77,6 +83,6 @@ closestEnemy w = let
     let Just target = w ^. cresById . at tid
     guard  $ target ^. team /= cre ^. team
     return sq
-  sorted = seEnemies & sort
+  sorted = seEnemies & sortOn (linf loc)
     in listToMaybe sorted
 

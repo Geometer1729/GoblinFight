@@ -67,6 +67,7 @@ defGob = Creature{
   _defenses   = M.empty,
   _unarmed    = 0,
   _grappledBy = Nothing,
+  _grappling  = Nothing,
   _creatureSpecific = Goblin
                  }
 

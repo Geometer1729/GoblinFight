@@ -33,6 +33,7 @@ data Action =
   | Stand
   | Escape
   | Grapple{ grapTarget :: Square }
+  | Release
   | Demoralize{ demoralizeTarget :: Square }
   deriving (Generic,NFData,Show)
 
@@ -49,7 +50,7 @@ data Attack = Attack{
   _range    :: Range
                     }deriving Show
 
-data CheckRes = CritFail | Fail | Suc | CritSuc deriving(Enum)
+data CheckRes = CritFail | Fail | Suc | CritSuc deriving(Enum,Eq)
 
 data Creature = Creature{
   _cuid                :: CUID,
@@ -73,7 +74,8 @@ data Creature = Creature{
   _ammo                :: M.Map String Int,
   _defenses            :: Defenses,
   _unarmed             :: Int, -- unarmed attack is needed for escape checks
-  _grappledBy          :: Maybe CUID, -- creature and escape DC
+  _grappledBy          :: Maybe (Bool,CUID), -- True indicates grapple was a crit succes
+  _grappling           :: Maybe (Bool,CUID),
   _creatureSpecific    :: CSpecific
                         } deriving Show
 

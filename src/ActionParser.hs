@@ -32,11 +32,14 @@ escapeParser = string "escape" $> Escape
 grappleParser :: ReadP Action
 grappleParser = Grapple <$> (string "grapple" *> skipSpaces *> parseSq)
 
+releaseParser :: ReadP Action
+releaseParser = string "release" $> Release
+
 demoralizeParser :: ReadP Action
 demoralizeParser = Demoralize <$> (string "demoralize" *> skipSpaces *> parseSq)
 
 actionParser :: ReadP Action
-actionParser = choice [moveParser,stepParser,strikeParser,dropProneParser,standParser,escapeParser,grappleParser,demoralizeParser]
+actionParser = choice [moveParser,stepParser,strikeParser,dropProneParser,standParser,escapeParser,grappleParser,releaseParser,demoralizeParser]
 
 parseInt :: ReadP Int
 parseInt = munch isDigit >>= \case

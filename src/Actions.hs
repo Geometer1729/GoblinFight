@@ -13,6 +13,7 @@ import Control.Lens hiding ((.>))
 import Control.Monad.State
 import Data.Functor
 import Data.Maybe
+import Flow
 import System.Random
 
 import qualified Data.Map as M
@@ -47,6 +48,7 @@ doAction :: CUID -> Action -> PF2E ()
 doAction cid Move{moveActions=actions,movePath=path} = do
   actionsLeft -= actions
   cre <- lookupCre cid
+  guard ( isNothing (cre ^. grappledBy) ) <|> fail "move attempt from grappled creature"
   guard ( and $ zipWith neighbor (cre ^. location:path) path ) <|> fail "invalid move path"
   tumbleCount  <- length . catMaybes <$> mapM use [squares . at loc | loc <- path ]
   guard ( length path + tumbleCount <= actions * ( cre^.speed `div` 5 ) ) <|> fail "move path too long"
@@ -62,6 +64,8 @@ doAction cid Step{stepDest=dest} = do
 doAction cid Strike{strikeIndex=i,strikeTarget=t} = do
   actionsLeft -= 1
   cre <- lookupCre cid
+  guard (any fst (cre ^. grappledBy)) <|> fail "can't strike while restrained"
+    -- any is folding the maybe so only if you are grappled and it was a crit are you restrained
   let attack = (cre ^. attacks) !! i
   mapen' <- use mapen :: PF2E Int
   mapen += 1
@@ -104,7 +108,7 @@ doAction cid Escape = do
   actionsLeft -= 1
   cre <- lookupCre cid
   case cre ^. grappledBy of
-    Just grapplerID -> do
+    Just (_,grapplerID) -> do
         let bon = (cre ^. wF athletics) `max` (cre ^. wF acrobatics) `max` (cre ^. wF unarmed) :: Int
         grapler <- lookupCre grapplerID
         res <- check bon (grapler ^. grappleDC)
@@ -114,12 +118,22 @@ doAction cid Escape = do
 doAction cid Grapple{ grapTarget = targetSq } = do
   actionsLeft -= 1
   cre <- lookupCre cid
+  guard (isNothing $ cre ^. grappling) <|> fail "you're already grapling someone"
   Just targetId <- use $ squares . at targetSq
   target   <- lookupCre targetId
   guard ( neighbor (cre ^. location) (target ^. location) ) <|> fail "grappled non-adjacent square"
   -- creatures should have inate reach for grapple
   res <- check (cre ^. wF athletics) (target ^. wF fortDC)
-  when (passes res) $ cresById . ix targetId . grappledBy .= Just cid
+  let crits = res == CritSuc
+  when (passes res) $ do
+    cresById . ix targetId . grappledBy .= Just (crits,cid)
+    cresById . ix cid      . grappling  .= Just (crits,targetId)
+
+doAction cid Release = do
+  cre <- lookupCre cid
+  let Just (_,targetId) = cre ^. grappling
+  cresById . ix targetId . grappledBy .= Nothing
+  cresById . ix cid      . grappling  .= Nothing
 
 doAction cid Demoralize{ demoralizeTarget = targetSq } = do
   actionsLeft -= 1
@@ -180,7 +194,7 @@ removeCre cid = do
   cresById . at cid .= Nothing
   squares         %= M.filter (/= cid)
   initTracker %=   filter (/= cid)
-  cresById . each . grappledBy %= filterMaybe (/= cid)
+  cresById . each . grappledBy %= filterMaybe (snd .> (/= cid))
 
 filterMaybe :: (a -> Bool) -> Maybe a -> Maybe a
 filterMaybe pred (Just a)
@@ -226,10 +240,15 @@ creTP :: CUID -> Square -> PF2E ()
 creTP cid dest = do
   cre <- lookupCre cid
   let src = cre ^. location
-  let cre' = cre & location .~ dest
   squares  . at src  .= Nothing
   squares  . at dest .= Just cid
-  cresById . at cid  .= Just cre'
+  cresById . ix cid  . location .= dest
+  case cre ^. grappling of
+    Nothing -> return ()
+    Just (_,tid) -> do
+      target <- lookupCre tid
+      let dist = linf (target ^. location) dest
+      when (dist > 1) $ doAction cid Release
 
 -- with fright
 wF :: Lens' Creature Int -> Getter Creature Int

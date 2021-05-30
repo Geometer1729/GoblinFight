@@ -42,7 +42,6 @@ getRectGrid sMap = let squares = M.keys sMap
                        ymax = maximum $ snd <$> squares
                      in [(x,y) | x <- [xmin..xmax], y <- [ymin..ymax]]
 
-
 loadRenderData :: World -> IO RenderData
 loadRenderData w = do
     let rectgrid = getRectGrid (w ^. squares)
@@ -112,7 +111,7 @@ renderAll rd = do
 handleMouse :: Event -> RenderData -> IO RenderData
 handleMouse (EventKey key state mods (keyx,keyy)) rd =
     trace "event" $ case state of
-        Up -> keyUp key (keyx,keyy) rd 
+        Up -> keyUp key (keyx,keyy) rd
         Down -> keyDown key (keyx,keyy) rd
 handleMouse _ rd = return rd
 
@@ -120,7 +119,7 @@ keyUp :: Key -> (Float,Float) -> RenderData-> IO RenderData
 keyUp (MouseButton mb) (x,y) rd = return rd
 keyUp (MouseButton LeftButton) (x,y) rd = do
     let newrd = rd & leftMouseDown .~ False
-    return rd 
+    return rd
 keyUp _ _ rd = return rd
 
 keyDown :: Key -> (Float,Float) -> RenderData -> IO RenderData
@@ -132,9 +131,10 @@ keyDown (MouseButton LeftButton) (x,y) rd = do
 keyDown _ _ rd = return rd
 
 screenToSquare :: (Float,Float) -> RenderData -> Square
-screenToSquare (x,y) rd = 
+screenToSquare (x,y) rd =
     let (panx,pany) = rd ^. globalPan
         zoom = fromIntegral $ rd ^. globalZoom
         rx = round $ (x - fromIntegral panx)/zoom
         ry = round $ (y - fromIntegral pany)/zoom
     in (rx,ry)
+
