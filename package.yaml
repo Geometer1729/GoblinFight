@@ -12,6 +12,7 @@ dependencies:
 - base
 - containers
 - deepseq
+- directory
 - flow
 - gloss
 - gloss-juicy
@@ -19,9 +20,12 @@ dependencies:
 - mtl
 - process
 - random
+- template-haskell
 
 library:
-  source-dirs: src
+  source-dirs:
+  - src
+  - ais
 
 executables:
   client-exe:
