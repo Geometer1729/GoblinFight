@@ -31,7 +31,7 @@ moveToward w dest = let
 
 genPath :: Int -> Square -> Square -> [Square]
 genPath 0 _ _ = []
-genPath n (x,y) dest@(x',y') = let
+genPath n src@(x,y) dest@(x',y') = let
   dx = case compare x x' of
          LT -> 1
          EQ -> 0
@@ -41,7 +41,9 @@ genPath n (x,y) dest@(x',y') = let
          EQ -> 0
          GT -> -1
   next = (x+dx,y+dy)
-    in next:genPath (n-1) next dest
+        in if src == dest
+              then []
+              else next:genPath (n-1) next dest
 
 posibleAttacks :: World -> [Action]
 posibleAttacks w = do
