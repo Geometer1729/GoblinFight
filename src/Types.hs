@@ -98,30 +98,38 @@ data DefenseType = Immune | Resist Int | Vuln Int deriving Show
 
 data Dice = D Int | C Int | NOf Int Dice | Add Dice Dice | Mul Dice Dice | Sub Dice Dice deriving Show
 
+data PreWorld = PreWorld {
+  _cres  :: [(Int,[(Creature,Square)])],
+  _rects :: [(Square,Square)],
+  _sqs   :: [Square]
+                         }
+
 data Range = Simple Int | Increment Int deriving Show
 
 data World = World{
    _squares         :: M.Map Square CUID,
    _battlefield     :: S.Set Square,
    _cresById        :: M.Map CUID Creature,
-   _initTracker :: [CUID],
+   _initTracker     :: [CUID],
    _nextCuid        :: CUID,
    _actionsLeft     :: Int,
    _ais             :: M.Map Int AI, -- maps teams to AIs
    _mapen           :: Int,  -- 0 1 or 2 (rather than 0 5 or 10)
-   _aiActionAwait   :: Maybe (MVar Action)
+   _aiActionAwait   :: Maybe (MVar Action),
+   _glossTurn       :: Bool
     }
 
 makeLenses ''Attack
 makeLenses ''CSpecific
 makeLenses ''Creature
+makeLenses ''PreWorld
 makeLenses ''World
 
 instance Show World where
   show w = unlines [ "World state:"
                    , "Squares: "              ++ show ( w^.squares         )
                    , "IDLookup: "             ++ show ( w^.cresById        )
-                   , "Inititive: "            ++ show ( w^.initTracker )
+                   , "Inititive: "            ++ show ( w^.initTracker     )
                    , "actions left: "         ++ show ( w^.actionsLeft     )
                    , "multi attack penalty: " ++ show ( w^.mapen           ) ]
 

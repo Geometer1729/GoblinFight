@@ -88,6 +88,9 @@ placeSquare :: Square -> PF2E ()
 placeSquare sq = do
     battlefield %= S.insert sq
 
+placeRect :: Square -> Square -> PF2E ()
+placeRect (x1,y1) (x2,y2) = mapM_ placeSquare [ (x,y) | x<-[x1..x2] , y<- [y1..y2] ]
+
 rollInitCre :: Creature -> PF2E Int
 rollInitCre cre = do
   dieRoll <- roll d20
@@ -99,18 +102,34 @@ rollInit = do
   initrolls <- mapM rollInitCre cres
   initTracker .= ( zip cres initrolls & sortOn snd .> map (fst .> _cuid) )
 
-init2Gob :: PF2E ()
-init2Gob = do
-  g1 <- register defGob
-  cresById . at g1 . _Just . team .= 1
-  place g1 (0,0)
-  g2 <- register defGob
-  cresById . at g2 . _Just . team .= 2
-  place g2 (0,1)
-  placeSquare (1,1)
-  placeSquare (2,1)
-  placeSquare (2,2)
-  placeSquare (1,2)
-  placeSquare (3,1)
+initCre :: Creature -> Int -> Square -> PF2E ()
+initCre cre t sq = do
+  cid <- register cre
+  cresById . at cid . each . team .= t
+  place cid sq
+
+loadPW :: PreWorld -> PF2E ()
+loadPW pw = do
+  sequence_ $ do
+    (team,members) <- pw ^. cres
+    (mem,sq) <- members
+    return $ initCre mem team sq
+  sequence_ $ do
+    (l,r) <- pw ^. rects
+    return $ placeRect l r
+  sequence_ $ do
+    sq <- pw ^. sqs
+    return $ placeSquare sq
   rollInit
+
+pw2Gob :: PreWorld
+pw2Gob = PreWorld{
+  _cres = [(1,[(defGob,(0,0))])
+          ,(2,[(defGob,(0,1))])] ,
+  _rects = [],
+  _sqs   = [(1,1),(2,1),(2,2),(1,2),(3,1)]
+                 }
+
+init2Gob :: PF2E ()
+init2Gob = loadPW pw2Gob
 

@@ -23,7 +23,7 @@ step = do
 
 endOfTurn :: PF2E ()
 endOfTurn = do
-  cresById . each . frightened %= (`subtract` 1) .> (max 0)
+  cresById . each . frightened %= (`subtract` 1) .> max 0
 
 stepInit :: PF2E ()
 stepInit = do
