@@ -13,13 +13,13 @@ import Control.Lens
 import Data.Maybe
 
 import qualified Data.Map as M
+import qualified Data.Set as S
 
 import Debug.Trace
 
 --all textures stored on disk as 512x512 pixels
 data RenderData = RenderData {
                     _world       :: World,
-                    _battlefield :: [Square],
                     _grassPic    :: Picture,
                     _gobPic      :: Picture,
                     _screenWidth :: Int,
@@ -34,6 +34,7 @@ data RenderData = RenderData {
 
 makeLenses ''RenderData
 
+{-
 getRectGrid :: M.Map Square a -> [Square]
 getRectGrid sMap = let squares = M.keys sMap
                        xmin = minimum $ fst <$> squares
@@ -41,16 +42,15 @@ getRectGrid sMap = let squares = M.keys sMap
                        ymin = minimum $ snd <$> squares
                        ymax = maximum $ snd <$> squares
                      in [(x,y) | x <- [xmin..xmax], y <- [ymin..ymax]]
+                     -}
 
 loadRenderData :: World -> IO RenderData
 loadRenderData w = do
-    let rectgrid = getRectGrid (w ^. squares)
     grassMaybe <- loadJuicyPNG "res/grass.png"
     gobMaybe <- loadJuicyPNG "res/gob.png"
     (width, height) <- getScreenSize
     return RenderData{
         _world = w,
-        _battlefield = rectgrid,
         _grassPic = fromJust grassMaybe,
         _gobPic = fromJust gobMaybe,
         _screenWidth = width,
@@ -72,7 +72,7 @@ onSquare rd p (x,y) =
 
 renderGrass :: RenderData -> IO Picture
 renderGrass rd = do
-    let grassRenders = [onSquare rd (rd ^. grassPic) s | s <- (rd ^. battlefield)]
+    let grassRenders = [onSquare rd (rd ^. grassPic) s | s <- S.toList (rd ^. world . battlefield)]
     return $ Pictures grassRenders
 
 getTeamColor :: Int -> Color
