@@ -1,13 +1,17 @@
+{-# LANGUAGE LambdaCase #-}
 module Run where
 
-import Types
-import Actions
 import ActionParser
+import Actions
+import Types
 
+import Control.Concurrent
+import Control.Concurrent.MVar
 import Control.Lens
 import Control.Monad.State
-import System.Process
 import Control.Monad.Trans
+import Control.DeepSeq
+import System.Process
 
 step :: PF2E ()
 step = do
@@ -18,7 +22,7 @@ step = do
 
 stepInit :: PF2E ()
 stepInit = do
-  globalInititive %= rotate
+  initTracker %= rotate
   actionsLeft .= 3 -- will need to check for haste eventually
   mapen .= 0
 
@@ -27,16 +31,41 @@ rotate [] = [] -- might run if all creatures dead
 rotate (x:xs) = xs ++ [x]
 
 runAction :: PF2E ()
-runAction = do
-   cid <- head <$> use globalInititive
-   cre <- lookupCre cid
-   let teamUp = cre ^. team
-   Just aiUp <- use $ ais . at teamUp
-   act <- get >>= runAI aiUp
-   doAction cid act
+runAction =
+  use aiActionAwait >>= \case
+      Just mvar ->
+        lift (tryTakeMVar mvar) >>= \case
+          Just action -> do
+            cid <- head <$> use initTracker
+            doAction cid action
+            aiActionAwait .= Nothing
+          Nothing -> return ()
+      Nothing -> do
+       cid <- head <$> use initTracker
+       cre <- lookupCre cid
+       let teamUp = cre ^. team
+       Just aiUp <- use $ ais . at teamUp
+       runAI aiUp
 
-runAI :: AI -> World -> PF2E Action
-runAI (Native f)        w = return $ f w
-runAI CLI               w = lift $ print w >> readLn
-runAI (Executable path) w = lift $ read <$> readProcess path [] (show w)
+runAI :: AI -> PF2E ()
+runAI (Native f) = do
+  w <- get
+  mvar <- lift newEmptyMVar
+  let result = f w
+  lift $ forkIO $ result `deepseq` putMVar mvar result
+  aiActionAwait .= Just mvar
+runAI CLI = do
+  w <- get
+  lift $ print w
+  mvar <- lift newEmptyMVar
+  lift $ forkIO $ readLn >>= putMVar mvar
+  aiActionAwait .= Just mvar
+runAI (Executable path) = do
+  w <- get
+  mvar <- lift newEmptyMVar
+  lift $ forkIO $ readProcess path [] (show w) <&> read >>= putMVar mvar
+  aiActionAwait .= Just mvar
+runAI _ = do
+  mvar <- lift newEmptyMVar
+  aiActionAwait .= Just mvar
 

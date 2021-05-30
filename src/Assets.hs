@@ -22,11 +22,12 @@ defWorld :: World
 defWorld = World{
   _squares         = M.empty,
   _cresById        = M.empty,
-  _globalInititive = [],
+  _initTracker = [],
   _nextCuid        = 0,
   _actionsLeft     = 3,
   _mapen           = 0,
-  _ais             = M.empty
+  _ais             = M.empty,
+  _aiActionAwait   = Nothing
                 }
 
 defGob :: Creature
@@ -90,7 +91,7 @@ rollInit :: PF2E ()
 rollInit = do
   cres      <- map snd . M.toList <$> use cresById
   initrolls <- mapM rollInitCre cres
-  globalInititive .= ( zip cres initrolls & sortOn snd .> map (fst .> _cuid) )
+  initTracker .= ( zip cres initrolls & sortOn snd .> map (fst .> _cuid) )
 
 init2Gob :: PF2E ()
 init2Gob = do

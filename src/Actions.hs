@@ -1,15 +1,19 @@
-{-# LANGUAGE MultiWayIf,RankNTypes #-}
+{-# LANGUAGE
+  MultiWayIf
+ ,RankNTypes
+#-}
 
 module Actions where
 
 import Dice
 import Types
 
-import Control.Lens
+import Control.Applicative
+import Control.Lens hiding ((.>))
 import Control.Monad.State
+import Data.Functor
 import Data.Maybe
 import System.Random
-import Data.Functor
 
 import qualified Data.Map as M
 
@@ -39,24 +43,19 @@ check bon dc = do
     20 -> promote res
     _  -> res
 
-tryTumble :: Creature -> Creature -> PF2E Bool
-tryTumble tumbling tumbled = if tumbling ^. team  == tumbled ^. team
-                                then return True
-                                else passes <$> check (tumbling ^. acrobatics) (tumbled ^. refDC)
-
 doAction :: CUID -> Action -> PF2E ()
 doAction cid Move{moveActions=actions,movePath=path} = do
   actionsLeft -= actions
   cre <- lookupCre cid
-  guard $ and $ zipWith neighbor (cre ^. location:path) path
+  guard ( and $ zipWith neighbor (cre ^. location:path) path ) <|> fail "invalid move path"
   tumbleCount  <- length . catMaybes <$> mapM use [squares . at loc | loc <- path ]
-  guard $ length path + tumbleCount <= actions * ( cre^.speed `div` 5 )
+  guard ( length path + tumbleCount <= actions * ( cre^.speed `div` 5 ) ) <|> fail "move path too long"
   doMoveHelp cid path
 
 doAction cid Step{stepDest=dest} = do
   actionsLeft -= 1
   cre <- lookupCre cid
-  guard $ neighbor (cre ^. location) dest
+  guard ( neighbor (cre ^. location) dest ) <|> fail "invalid step"
   Nothing <- use $ squares . at dest
   creTP cid dest
 
@@ -66,26 +65,27 @@ doAction cid Strike{strikeIndex=i,strikeTarget=t} = do
   let attack = (cre ^. attacks) !! i
   mapen' <- use mapen :: PF2E Int
   mapen += 1
-  let (b0,b1,b2) = attack ^. bonus :: (Int,Int,Int)
-      bonus' = case mapen' of
-                 0 -> b0
-                 1 -> b1
-                 _ -> b2
+  let bonus' = attack ^. bonus . mapLen mapen'
   Just targetCid <- use $ squares . at t
   target <- lookupCre targetCid
   case attack ^. ammoType of
     Just aType -> do
       let mLeft = cre ^. ammo . at aType
-      guard $ isJust mLeft
+      guard ( isJust mLeft ) <|> fail "ammo type lookup fail"
       let left = fromJust mLeft
-      guard $ left > 0
+      guard (left > 0) <|> fail "no ammo left to fire that"
       cresById . ix cid . ammo . ix aType -= 1
     Nothing -> return ()
   let r = linf (cre ^. location) (target ^. location)
   rangePen <- case attack ^. range of
-                 Simple ar -> guard (r < ar) $> 0
-                 Increment ri -> guard (r < 6 * ri) $> 2 * (r `div` ri)
-  res <- check (bonus' - rangePen) (target ^. ac)
+                 Simple ar -> ( guard (r <= ar) $> 0 )  <|> fail "can't reach target"
+                 Increment ri -> ( guard (r <= 6 * ri) $> 2 * (r `div` ri) )
+                      <|> fail " targetmore than 6 range incriments out"
+
+  isFlanking <- checkFlanking cid targetCid
+  let targFlatFooted = isJust (target ^. grappledBy ) || target ^. prone || isFlanking
+      tac = (target ^. wF ac) - if targFlatFooted then 2 else 0
+  res <- check (bonus' - rangePen - cre ^. frightened) tac
   let maybeDamage = case res of
                  CritSuc -> Just $ attack ^. critDmg
                  Suc     -> Just $ attack ^. dmg
@@ -104,33 +104,65 @@ doAction cid Escape = do
   actionsLeft -= 1
   cre <- lookupCre cid
   case cre ^. grappledBy of
-    Just (grapplerID,dc) -> do
-        let bon = (cre ^. athletics) `max` (cre ^. acrobatics) `max` (cre ^. unarmed) :: Int
-        res <- check bon dc
+    Just grapplerID -> do
+        let bon = (cre ^. wF athletics) `max` (cre ^. wF acrobatics) `max` (cre ^. wF unarmed) :: Int
+        grapler <- lookupCre grapplerID
+        res <- check bon (grapler ^. grappleDC)
         when (passes res) $ cresById . ix cid . grappledBy .= Nothing
-    Nothing -> error "escape acction used by un grappled creature"
+    Nothing -> fail "escape acction used by un grappled creature"
 
 doAction cid Grapple{ grapTarget = targetSq } = do
   actionsLeft -= 1
   cre <- lookupCre cid
   Just targetId <- use $ squares . at targetSq
   target   <- lookupCre targetId
-  guard $ neighbor (cre ^. location) (target ^. location)
-  res <- check (cre ^. athletics) (target ^. fortDC)
-  when (passes res) $ cresById . ix targetId . grappledBy .= Just (cid,10 + cre ^. athletics)
+  guard ( neighbor (cre ^. location) (target ^. location) ) <|> fail "grappled non-adjacent square"
+  -- creatures should have inate reach for grapple
+  res <- check (cre ^. wF athletics) (target ^. wF fortDC)
+  when (passes res) $ cresById . ix targetId . grappledBy .= Just cid
 
 doAction cid Demoralize{ demoralizeTarget = targetSq } = do
   actionsLeft -= 1
   cre <- lookupCre cid
   Just targetId <- use $ squares . at targetSq
   target <- lookupCre targetId
-  guard $ targetId `notElem` (cre ^. demoralizeCooldowns )
-  res <- check (cre ^. intimidate) (target ^. willDC)
+  guard ( targetId `notElem` (cre ^. demoralizeCooldowns ) ) <|> fail "demoralize creature in cooldown"
+  res <- check (cre ^. wF intimidate) (target ^. wF willDC)
   case res of
     CritFail -> return ()
     Fail     -> return ()
     Suc      -> cresById . ix targetId . frightened %= max 1
     CritSuc  -> cresById . ix targetId . frightened %= max 2
+
+mapLen :: Int -> Lens' (Int,Int,Int) Int
+mapLen 0 = _1
+mapLen 1 = _2
+mapLen _ = _3
+
+tryTumble :: Creature -> Creature -> PF2E Bool
+tryTumble tumbling tumbled = if tumbling ^. team  == tumbled ^. team
+                                then return True
+                                else passes <$> check (tumbling ^. wF acrobatics) (tumbled ^. wF refDC)
+
+checkFlanking :: CUID -> CUID -> PF2E Bool
+checkFlanking cid1 cid2 = do
+  c1 <- lookupCre cid1
+  c2 <- lookupCre cid2
+  let l1 = c1 ^. location
+      l2 = c2 ^. location
+      fos = flankOptions l1 l2
+  flankerids <- catMaybes <$> mapM (use . fmap squares . at) fos :: PF2E [CUID]
+  flankers <- mapM lookupCre flankerids
+  return $ any (\c -> c ^. team == c1 ^. team) flankers
+
+flankOptions :: Square -> Square -> [Square]
+flankOptions (x1,y1) (x2,y2) = let
+  dx = x2 - x1
+  dy = y2 - y1
+    in [(x2+dx,y2+dx)]
+-- This will evantually be updated to handle reach
+-- and large+ creatures correctly
+-- that's why it uses the list type even though it always returns 1 square
 
 dealDamage :: Damage -> CUID -> PF2E ()
 dealDamage (dType,dDice) cid = do
@@ -147,7 +179,15 @@ removeCre :: CUID -> PF2E ()
 removeCre cid = do
   cresById . at cid .= Nothing
   squares         %= M.filter (/= cid)
-  globalInititive %=   filter (/= cid)
+  initTracker %=   filter (/= cid)
+  cresById . each . grappledBy %= filterMaybe (/= cid)
+
+filterMaybe :: (a -> Bool) -> Maybe a -> Maybe a
+filterMaybe pred (Just a)
+  | pred a = Just a
+filterMaybe _ _ = Nothing
+--filterMaybe pred m = m >>= guard . pred >> m
+-- works but seems less readable
 
 appDef :: Maybe DefenseType -> Int -> Int
 appDef Nothing           = id
@@ -174,7 +214,6 @@ lookupCre cid = do
       Just cre -> return cre
       Nothing  -> error "lookup given invalid creature id"
 
-
 linf :: Square -> Square -> Int
 linf (x1,y1) (x2,y2) = 5 * max (abs (x1-x2)) (abs (y1-y2))
 
@@ -191,4 +230,11 @@ creTP cid dest = do
   squares  . at src  .= Nothing
   squares  . at dest .= Just cid
   cresById . at cid  .= Just cre'
+
+-- with fright
+wF :: Lens' Creature Int -> Getter Creature Int
+wF l = to $ \cre -> cre ^. l - cre ^. frightened
+
+grappleDC :: Getter Creature Int
+grappleDC = to $ \cre -> 10 + cre ^. athletics - cre ^. frightened
 
