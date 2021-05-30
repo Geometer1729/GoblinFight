@@ -64,7 +64,7 @@ doAction cid Step{stepDest=dest} = do
 doAction cid Strike{strikeIndex=i,strikeTarget=t} = do
   actionsLeft -= 1
   cre <- lookupCre cid
-  guard (any fst (cre ^. grappledBy)) <|> fail "can't strike while restrained"
+  guard (not $ any fst (cre ^. grappledBy)) <|> fail "can't strike while restrained"
     -- any is folding the maybe so only if you are grappled and it was a crit are you restrained
   let attack = (cre ^. attacks) !! i
   mapen' <- use mapen :: PF2E Int
