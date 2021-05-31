@@ -136,7 +136,7 @@ shouldRenderOverlay rd sq =
     in head init == cId
 
 renderOverlay :: RenderData -> Square -> Picture
-renderOverlay rd sq = Blank
+renderOverlay rd sq = renderActionGUI rd
 
 renderAll :: RenderData -> IO Picture
 renderAll rd = do
@@ -185,3 +185,55 @@ screenToSquare (x,y) rd =
         ry = round $ (y - pany)/zoom
     in (rx,ry)
 
+actionGUI :: BZ Action
+actionGUI = Zipper []
+    Button {
+        buttonPic = getButtonImage 200 40 (makeColor 0.1 0.2 1 1) "Move",
+        buttonInfo = Move{movePath=[]}
+    }
+    [
+    Button {
+        buttonPic = getButtonImage 200 40 (makeColor 0.1 0.2 0.8 1) "Step",
+        buttonInfo = Step{stepDest=(0,0)}
+    },
+    Button {
+        buttonPic = getButtonImage 200 40 (makeColor 0.9 0.2 0.1 1) "Strike",
+        buttonInfo = Strike{strikeIndex=(-1),strikeTarget=(0,0)}
+    },
+    Button {
+        buttonPic = getButtonImage 200 40 (makeColor 0.4 0.4 0.5 1) "Drop Prone",
+        buttonInfo = DropProne
+    },
+    Button {
+        buttonPic = getButtonImage 200 40 (makeColor 0.4 0.4 0.5 1) "Stand",
+        buttonInfo = Stand
+    },
+    Button {
+        buttonPic = getButtonImage 200 40 (makeColor 0.4 0.4 0.5 1) "Escape",
+        buttonInfo = Escape
+    },
+    Button {
+        buttonPic = getButtonImage 200 40 (makeColor 0.2 1 0.4 1) "Grapple",
+        buttonInfo = Grapple{grapTarget=(0,0)}
+    },
+    Button {
+        buttonPic = getButtonImage 200 40 (makeColor 0.4 0.4 0.5 1) "Release",
+        buttonInfo = Release
+    },
+    Button {
+        buttonPic = getButtonImage 200 40 (makeColor 0.4 0.4 0.5 1) "Demoralize",
+        buttonInfo = Demoralize{demoralizeTarget=(0,0)}
+    }
+    ]
+
+--Only called when square is selected
+renderActionGUI ::  RenderData -> Picture
+renderActionGUI rd = 
+    let (Zipper leftbuttons selected rightbuttons) = actionGUI
+        sq = fromJust $ rd ^. selectedSquare
+        squareSize =  fromIntegral $ rd ^. globalZoom
+        --render left of zipper
+        leftpics = map ((Translate squareSize 0.0) . (\p -> onSquare rd p sq) . buttonPic) leftbuttons
+        rightpics = map ((Translate squareSize 0.0) . (\p -> onSquare rd p sq) . buttonPic) rightbuttons
+        selectpic = ((Translate squareSize 0.0) . (\p -> onSquare rd p sq) . buttonPic) selected
+    in Pictures $ leftpics ++ rightpics ++ [selectpic]
