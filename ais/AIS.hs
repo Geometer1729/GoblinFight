@@ -12,9 +12,9 @@ import AIS.THLoaders
 import qualified Data.Map as M
 
 loadAI :: String -> Int -> PF2E ()
-loadAI "cli" team = ais . at team .= Just CLI
-loadAI "gloss" team = ais . at team .= Just Gloss
-loadAI name team  = ais . at team .= aiMap ^. at name
+loadAI "cli"   t = ais . at t .= Just CLI
+loadAI "gloss" t = ais . at t .= Just Gloss
+loadAI name    t = ais . at t .= aiMap ^. at name
 
 aiMap :: M.Map String AI
 aiMap = M.union natives execs

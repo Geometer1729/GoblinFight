@@ -7,7 +7,7 @@
 
 module Types where
 
-import GHC.Generics (Generic,Generic1)
+import GHC.Generics
 import Control.Concurrent
 import Control.Lens
 import Control.Monad.State
@@ -55,7 +55,7 @@ data Attack = Attack{
 
 data CheckRes = CritFail | Fail | Suc | CritSuc deriving(Enum,Eq)
 
-data CoverLevel = None | Cover | GreaterCover | NoLOE
+data CoverLevel = None | Lesser | Standard | Greater | NoLOE deriving (Eq,Ord,Show)
 
 data Creature = Creature{
   _cuid                :: CUID,

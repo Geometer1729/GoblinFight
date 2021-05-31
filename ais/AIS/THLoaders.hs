@@ -13,9 +13,9 @@ loadNatives = do
   return $ ListE exps
 
 loadNative :: String -> Q (Maybe Exp)
-loadNative mod = do
-  let varName = let (c:cs) = mod in toLower c : cs
-  maybeName <- lookupValueName ("AIS.Natives." ++ mod ++ "." ++ varName)
+loadNative modu = do
+  let varName = let (c:cs) = modu in toLower c : cs
+  maybeName <- lookupValueName ("AIS.Natives." ++ modu ++ "." ++ varName)
   case maybeName of
     Nothing -> return Nothing
     Just name -> return $ Just $ TupE

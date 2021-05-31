@@ -46,9 +46,9 @@ rollInitCre cre = do
 
 rollInit :: PF2E ()
 rollInit = do
-  cres      <- map snd . M.toList <$> use cresById
-  initrolls <- mapM rollInitCre cres
-  initTracker .= ( zip cres initrolls & sortOn snd .> map (fst .> _cuid) )
+  creatures <- map snd . M.toList <$> use cresById
+  initrolls <- mapM rollInitCre creatures
+  initTracker .= ( zip creatures initrolls & sortOn snd .> map (^. _1 . cuid) )
 
 initCre :: Creature -> Int -> Square -> PF2E ()
 initCre cre t sq = do
@@ -60,9 +60,9 @@ loadPW :: PreWorld -> PF2E ()
 loadPW pw = do
   put defWorld
   sequence_ $ do
-    (team,members) <- pw ^. cres
+    (t,members) <- pw ^. cres
     (mem,sq) <- members
-    return $ initCre mem team sq
+    return $ initCre mem t sq
   sequence_ $ do
     (l,r) <- pw ^. rects
     return $ placeRect l r

@@ -4,3 +4,9 @@ calculate cover
 
 support large creatures
 	grappling should use unarmed reach
+
+BUGS
+
+	simple sometimes trys to move too far
+
+	cover doesn't seem to halt

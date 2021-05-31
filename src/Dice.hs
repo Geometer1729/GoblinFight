@@ -15,6 +15,14 @@ d10 = D 10
 d12 = D 12
 d20 = D 20
 
+rollIO :: Dice -> IO Int
+rollIO (C n) = return n
+rollIO (D n) = randomRIO (1,n)
+rollIO (NOf n dice) = sum <$> replicateM n (rollIO dice)
+rollIO (Add l r) = liftM2 (+) (rollIO l) (rollIO r)
+rollIO (Mul l r) = liftM2 (*) (rollIO l) (rollIO r)
+rollIO (Sub l r) = liftM2 (-) (rollIO l) (rollIO r)
+
 instance Num Dice where
     (+) = Add
     (*) = Mul
@@ -36,11 +44,3 @@ instance Num (Dice -> Dice) where
   (-)    = error "dice litteral hack went awry"
   abs    = error "dice litteral hack went awry"
   signum = error "dice litteral hack went awry"
-
-rollIO :: Dice -> IO Int
-rollIO (C n) = return n
-rollIO (D n) = randomRIO (1,n)
-rollIO (NOf n dice) = sum <$> replicateM n (rollIO dice)
-rollIO (Add l r) = liftM2 (+) (rollIO l) (rollIO r)
-rollIO (Mul l r) = liftM2 (*) (rollIO l) (rollIO r)
-rollIO (Sub l r) = liftM2 (-) (rollIO l) (rollIO r)

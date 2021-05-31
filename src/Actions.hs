@@ -1,6 +1,7 @@
 {-# LANGUAGE
   MultiWayIf
  ,RankNTypes
+ ,LambdaCase
 #-}
 
 module Actions where
@@ -14,7 +15,6 @@ import Control.Monad.State
 import Data.Functor
 import Data.Maybe
 import Flow
-import System.Random
 
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -53,8 +53,8 @@ doAction cid Move{movePath=path} = do
   tumbleIds  <- catMaybes <$> mapM use [squares . at loc | loc <- path ]
   tumbleCres <- mapM lookupCre tumbleIds
   let tumbleCount = length . filter (\t -> t ^. team /= cre ^. team) $ tumbleCres
-  let sqs = length path + tumbleCount
-  let actionsNeeded = (5*sqs) `div` (cre ^. speed )
+  let movement = length path + tumbleCount
+  let actionsNeeded = (5*movement) `div` (cre ^. speed )
   (use actionsLeft >>= guard . (<= actionsNeeded)) <|> fail "not enough actions to move that far"
   actionsLeft -= actionsNeeded
   doMoveHelp cid path
@@ -91,9 +91,19 @@ doAction cid Strike{strikeIndex=i,strikeTarget=t} = do
                  Increment ri -> ( guard (r <= 6 * ri) $> 2 * (r `div` ri) )
                       <|> fail " targetmore than 6 range incriments out"
 
+  {-
+  coverBoost <- determineCover (cre ^. location) (target ^. location) >>= \case
+      None     -> return 0
+      Lesser   -> return 1
+      Standard -> return 2
+      Greater  -> return 4
+      NoLOE    -> fail "no line of effect to that target"
+      -}
+  let coverBoost = 0
+
   isFlanking <- checkFlanking cid targetCid
   let targFlatFooted = isJust (target ^. grappledBy ) || target ^. prone || isFlanking
-      tac = (target ^. wF ac) - if targFlatFooted then 2 else 0
+      tac = (target ^. wF ac) - if targFlatFooted then 2 else 0 + coverBoost
   res <- check (bonus' - rangePen - cre ^. frightened) tac
   let maybeDamage = case res of
                  CritSuc -> Just $ attack ^. critDmg
@@ -178,7 +188,7 @@ flankOptions :: Square -> Square -> [Square]
 flankOptions (x1,y1) (x2,y2) = let
   dx = x2 - x1
   dy = y2 - y1
-    in [(x2+dx,y2+dx)]
+    in [(x2+dx,y2+dy)]
 -- This will evantually be updated to handle reach
 -- and large+ creatures correctly
 -- that's why it uses the list type even though it always returns 1 square
@@ -202,8 +212,8 @@ removeCre cid = do
   cresById . each . grappledBy %= filterMaybe (snd .> (/= cid))
 
 filterMaybe :: (a -> Bool) -> Maybe a -> Maybe a
-filterMaybe pred (Just a)
-  | pred a = Just a
+filterMaybe predicate (Just a)
+  | predicate a = Just a
 filterMaybe _ _ = Nothing
 --filterMaybe pred m = m >>= guard . pred >> m
 -- works but seems less readable
@@ -211,7 +221,7 @@ filterMaybe _ _ = Nothing
 appDef :: Maybe DefenseType -> Int -> Int
 appDef Nothing           = id
 appDef (Just Immune)     = const 0
-appDef (Just (Resist r)) = max 0 . (`subtract` 4)
+appDef (Just (Resist r)) = max 0 . (`subtract` r)
 appDef (Just (Vuln   v)) = (+v)
 
 doMoveHelp :: CUID -> [Square] -> PF2E ()
@@ -264,19 +274,78 @@ wF l = to $ \cre -> cre ^. l - cre ^. frightened
 grappleDC :: Getter Creature Int
 grappleDC = to $ \cre -> 10 + cre ^. athletics - cre ^. frightened
 
+type Point = (Float,Float) -- seems silly to import Gloss for this alias
+
 determineCover :: Square -> Square -> PF2E CoverLevel
 determineCover src dest = do
-  undefined src
-  undefined dest
+  w <- get
+  lift $ putStrLn $ "src: "  ++ show src
+  lift $ putStrLn $ "dest: " ++ show dest
+  lift $ putStrLn $ "world: " ++ show w
+  let coverSqs = inbetween src dest
+  loe <- hasLoe src dest
+  if loe
+    then coverOfLine coverSqs
+    else return NoLOE
 
+coverOfLine :: [Square] -> PF2E CoverLevel
+coverOfLine lineSqs = do
+  bf     <- use battlefield
+  creSqs <- use squares
+  let wallCover = length [ () | sq <- lineSqs , sq `S.notMember` bf     ]
+  let creCover  = length [ () | sq <- lineSqs , sq `M.member`    creSqs ]
+  return $ if | wallCover > 1 -> Greater
+              | wallCover > 0 -> Standard
+              | creCover  > 0 -> Lesser
+              | otherwise -> None
 
+hasLoe :: Square -> Square -> PF2E Bool
+hasLoe s1 s2 = do
+  covers <- sequence $ do
+    c1 <- corners s1
+    c2 <- corners s2
+    return $ coverOfLine (inbetween' c1 c2)
+  return $ maximum (None:covers) <= Lesser
 
+corners :: Square -> [Point]
+corners (xl,yl) = do
+    x <- [xl,xl+1]
+    y <- [yl,yl+1]
+    return (fromIntegral x,fromIntegral y)
 
+inbetween :: Square -> Square -> [Square]
+inbetween p1 p2 = inbetweenOrd (min p1 p2) (max p1 p2)
 
+inbetweenOrd :: Square -> Square -> [Square]
+inbetweenOrd (x1,y1) (x2,y2)
+  | x1 == x2 = let x = x1 in [(x,y) | y <- [y1+1..y2-1] <|> [y2+1..y1-1] ]
+  | y1 == y2 = let y = y1 in [(x,y) | x <- [x1+1..x2-1] ]
+  | otherwise  = let
+      pt1 = (fromIntegral x1 + 0.5,fromIntegral y1 + 0.5)
+      pt2 = (fromIntegral x2 + 0.5,fromIntegral y2 + 0.5)
+        in inbetween' pt1 pt2
 
+inbetween' :: Point -> Point -> [Square]
+inbetween' (x1,y1) (x2,y2) = middle $ do
+  (xl,xh) <- intervals x1 x2
+  let f x = (x - x1) * (y2-y1)/(x2-x1) + y1
+  let yxl = f xl
+  let yxh = f xh
+  let yl = floor    $ min yxl yxh
+  let yh = ceiling  $ max yxl yxh
+  let x  = floor xl
+  y <- [yl..yh-1]
+  return (x,y)
 
+middle :: [a] -> [a]
+middle [] = []
+middle [_] = []
+middle [_,_] = []
+middle xs = init . tail $ xs
 
-
-
-
+intervals :: Float -> Float -> [(Float,Float)]
+intervals xl xh = let
+  xl' = fromIntegral ( ceiling xl :: Int )
+  xh' = fromIntegral ( floor   xh :: Int )
+    in [(xl,xl')] ++ [(x,x+1) | x <- [xl'..xh'-1] ] ++ [(xh',xh)]
 

@@ -3,7 +3,6 @@ module AIS.Natives.Simple where
 import Types
 import Actions(linf)
 
-import Flow
 import Control.Lens hiding ((.>))
 import qualified Data.Map as M
 import Data.Maybe
@@ -14,7 +13,6 @@ simple :: World -> Action
 simple w = let
   cid = w ^. initTracker . to head
   Just cre = w ^. cresById . at cid
-  loc = cre ^. location
   as = posibleAttacks w
     in case cre ^. grappledBy of
          Just _ -> Escape

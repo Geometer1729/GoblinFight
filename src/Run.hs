@@ -1,15 +1,13 @@
 {-# LANGUAGE LambdaCase #-}
 module Run where
 
-import ActionParser
+import ActionParser ()
 import Actions
 import Types
 
 import Control.Concurrent
-import Control.Concurrent.MVar
 import Control.Lens hiding ((.>))
 import Control.Monad.State
-import Control.Monad.Trans
 import Control.DeepSeq
 import Data.List
 import Flow
@@ -57,24 +55,25 @@ runAction =
        let teamUp = cre ^. team
        Just aiUp <- use $ ais . at teamUp
        runAI aiUp
+       lift $ putStrLn "awaiting player"
 
 runAI :: AI -> PF2E ()
 runAI (Native f) = do
   w <- get
   mvar <- lift newEmptyMVar
   let result = f w
-  lift $ forkIO $ result `deepseq` putMVar mvar result
+  _ <- lift $ forkIO $ result `deepseq` putMVar mvar result
   aiActionAwait .= Just mvar
 runAI CLI = do
   w <- get
   lift $ print w
   mvar <- lift newEmptyMVar
-  lift $ forkIO $ readLn >>= putMVar mvar
+  _ <- lift $ forkIO $ readLn >>= putMVar mvar
   aiActionAwait .= Just mvar
 runAI (Executable path) = do
   w <- get
   mvar <- lift newEmptyMVar
-  lift $ forkIO $ readProcess path [] (show w) <&> read >>= putMVar mvar
+  _ <- lift $ forkIO $ readProcess path [] (show w) <&> read >>= putMVar mvar
   aiActionAwait .= Just mvar
 runAI Gloss = do
   mvar <- lift newEmptyMVar
@@ -83,8 +82,8 @@ runAI Gloss = do
 
 detectWin :: PF2E (Maybe Int)
 detectWin = do
-  cres <- use cresById
-  let ts = group $ map (^. team) $ M.elems cres
+  creatures <- use cresById
+  let ts = group $ map (^. team) $ M.elems creatures
   return $ do
     guard  $ length ts == 1
     return $ head . head $ ts
