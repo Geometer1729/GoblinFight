@@ -32,7 +32,7 @@ moveToward w dest = let
   loc = cre ^. location
   spaces = (cre ^. speed) `div` 5
   path = genPath spaces loc dest
-    in Move{moveActions=1,movePath=path}
+    in Move{movePath=path}
 
 genPath :: Int -> Square -> Square -> [Square]
 genPath 0 _ _ = []

@@ -46,15 +46,17 @@ check bon dc = do
     _  -> res
 
 doAction :: CUID -> Action -> PF2E ()
-doAction cid Move{moveActions=actions,movePath=path} = do
-  actionsLeft -= actions
+doAction cid Move{movePath=path} = do
   cre <- lookupCre cid
   guard ( isNothing (cre ^. grappledBy) ) <|> fail "move attempt from grappled creature"
   guard ( and $ zipWith neighbor (cre ^. location:path) path ) <|> fail "invalid move path"
   tumbleIds  <- catMaybes <$> mapM use [squares . at loc | loc <- path ]
   tumbleCres <- mapM lookupCre tumbleIds
   let tumbleCount = length . filter (\t -> t ^. team /= cre ^. team) $ tumbleCres
-  guard ( length path + tumbleCount <= actions * ( cre^.speed `div` 5 ) ) <|> fail "move path too long"
+  let sqs = length path + tumbleCount
+  let actionsNeeded = (5*sqs) `div` (cre ^. speed )
+  (use actionsLeft >>= guard . (<= actionsNeeded)) <|> fail "not enough actions to move that far"
+  actionsLeft -= actionsNeeded
   doMoveHelp cid path
 
 doAction cid Step{stepDest=dest} = do

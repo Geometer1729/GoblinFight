@@ -29,7 +29,7 @@ negPair (x,y) = (-x,-y)
 type Stat = Lens' Creature Int
 
 data Action =
-    Move {moveActions :: Int , movePath :: [Square] }
+    Move {movePath :: [Square] }
   | Step {stepDest :: Square }
   | Strike { strikeIndex :: Int, strikeTarget :: Square }
   | DropProne
