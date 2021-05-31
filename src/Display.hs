@@ -4,6 +4,7 @@
 module Display where
 
 import Types
+import Buttons
 
 import Graphics.Gloss
 import Graphics.Gloss.Juicy
