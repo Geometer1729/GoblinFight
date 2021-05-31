@@ -60,11 +60,20 @@ posibleAttacks w = do
   targetId <- maybeToList $ w ^. squares . at targetSq
   target <-   maybeToList $ w ^. cresById . at targetId
   guard $ target ^. team /= cre ^. team -- friendly fire is cringe
+  guard $ hasAmmo cre attack
   return $ Strike{strikeIndex=attackIndex,strikeTarget=targetSq}
+
+hasAmmo :: Creature -> Attack -> Bool
+hasAmmo cre atk = case atk ^. ammoType of
+                    Nothing -> True
+                    Just ammoT -> case cre ^. ammo . at ammoT of
+                                    Nothing -> False
+                                    Just ammount -> ammount > 0
+
 
 inRange :: Range -> [Square]
 inRange r' = let
-  r = maxRange r'
+  r = maxRange r' `div` 5
     in [ (x,y) | x <- [-r..r] , y <- [-r..r] , (x,y) /= (0,0) ]
 
 maxRange :: Range -> Int

@@ -20,8 +20,8 @@ testTumbleBy = execStateT (do
 
 get2GobCLI :: IO World
 get2GobCLI = execStateT (do
-  loadFile "2Gob"
-  loadAI "cli" 1
+  loadFile "big"
+  loadAI "simple" 1
   loadAI "simple" 2
     ) undefined
 

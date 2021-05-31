@@ -11,8 +11,11 @@ import Control.Lens hiding ((.>))
 import Control.Monad.State
 import Control.Monad.Trans
 import Control.DeepSeq
+import Data.List
 import Flow
 import System.Process
+
+import qualified Data.Map as M
 
 step :: PF2E ()
 step = do
@@ -77,4 +80,13 @@ runAI Gloss = do
   mvar <- lift newEmptyMVar
   glossTurn .= True
   aiActionAwait .= Just mvar
+
+detectWin :: PF2E (Maybe Int)
+detectWin = do
+  cres <- use cresById
+  let ts = group $ map (^. team) $ M.elems cres
+  return $ do
+    guard  $ length ts == 1
+    return $ head . head $ ts
+
 

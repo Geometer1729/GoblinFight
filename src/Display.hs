@@ -46,7 +46,7 @@ getRectGrid sMap = let squares = M.keys sMap
                      -}
 
 loadRenderData :: World -> IO RenderData
-loadRenderData w = do
+loadRenderData w = centerPan <$> do
     grassMaybe <- loadJuicyPNG "res/grass.png"
     gobMaybe <- loadJuicyPNG "res/gob.png"
     selectMaybe <- loadJuicyPNG "res/select.png"
@@ -65,6 +65,20 @@ loadRenderData w = do
         _lastDragPos = (0,0),
         _selectedSquare = Nothing
     }
+
+centerPan :: RenderData -> RenderData
+centerPan rd = let
+  bf = S.toList $ rd ^. world . battlefield
+  left  = minimum . map fst $ bf
+  right = maximum . map fst $ bf
+  up    = maximum . map snd $ bf
+  down  = minimum . map snd $ bf
+  scale = rd ^. globalZoom
+  x = negate $ (fromIntegral scale/2) * fromIntegral (left+right)
+  y = negate $ (fromIntegral scale/2) * fromIntegral (up  +down )
+    in rd & globalPan .~ (x,y)
+
+
 
 onSquare :: RenderData -> Picture -> Square -> Picture
 onSquare rd p (x,y) =
@@ -135,7 +149,7 @@ keyDown (MouseButton LeftButton) (x,y) rd = do
     return (rd & leftMouseDown .~ True & lastDragPos .~ (x,y))
 keyDown (MouseButton RightButton) (x,y) rd = do
         let square = screenToSquare (x,y) rd
-            selectrd = if square `S.member` (rd ^. world . battlefield) 
+            selectrd = if square `S.member` (rd ^. world . battlefield)
                 then rd & selectedSquare .~ Just square
                 else rd & selectedSquare .~ Nothing
         return selectrd
