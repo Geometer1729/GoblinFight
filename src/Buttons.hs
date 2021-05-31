@@ -2,6 +2,7 @@ module Buttons where
 
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
+import Data.Maybe
 
 data Button a = Button{
   renderAt    :: Point,

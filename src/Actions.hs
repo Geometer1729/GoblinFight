@@ -264,3 +264,19 @@ wF l = to $ \cre -> cre ^. l - cre ^. frightened
 grappleDC :: Getter Creature Int
 grappleDC = to $ \cre -> 10 + cre ^. athletics - cre ^. frightened
 
+determineCover :: Square -> Square -> PF2E CoverLevel
+determineCover src dest = do
+  undefined src
+  undefined dest
+
+
+
+
+
+
+
+
+
+
+
+

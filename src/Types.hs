@@ -55,6 +55,8 @@ data Attack = Attack{
 
 data CheckRes = CritFail | Fail | Suc | CritSuc deriving(Enum,Eq)
 
+data CoverLevel = None | Cover | GreaterCover | NoLOE
+
 data Creature = Creature{
   _cuid                :: CUID,
   _team                :: Int,
