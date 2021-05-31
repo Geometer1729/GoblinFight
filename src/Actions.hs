@@ -55,7 +55,8 @@ doAction cid Move{movePath=path} = do
   let tumbleCount = length . filter (\t -> t ^. team /= cre ^. team) $ tumbleCres
   let movement = length path + tumbleCount
   let actionsNeeded = (5*movement) `div` (cre ^. speed )
-  (use actionsLeft >>= guard . (<= actionsNeeded)) <|> fail "not enough actions to move that far"
+  lift $ putStrLn $ "actions needed: " ++ show actionsNeeded
+  (use actionsLeft >>= guard . (>= actionsNeeded)) <|> fail "not enough actions to move that far"
   actionsLeft -= actionsNeeded
   doMoveHelp cid path
 
