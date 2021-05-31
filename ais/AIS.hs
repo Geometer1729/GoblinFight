@@ -13,6 +13,7 @@ import qualified Data.Map as M
 
 loadAI :: String -> Int -> PF2E ()
 loadAI "cli" team = ais . at team .= Just CLI
+loadAI "gloss" team = ais . at team .= Just Gloss
 loadAI name team  = ais . at team .= aiMap ^. at name
 
 aiMap :: M.Map String AI

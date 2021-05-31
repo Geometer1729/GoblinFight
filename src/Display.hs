@@ -4,6 +4,7 @@
 module Display where
 
 import Types
+import Buttons
 
 import Graphics.Gloss
 import Graphics.Gloss.Juicy
@@ -121,7 +122,21 @@ renderGoblinHealthbar rd g =
 renderGUI :: RenderData -> IO Picture
 renderGUI rd | null $ rd ^. selectedSquare = return Blank
              | otherwise = let sq = fromJust (rd ^. selectedSquare)
-                           in return $ onSquare rd (rd ^. selectPic) sq
+                               overlay = if (rd ^. world . glossTurn) && shouldRenderOverlay rd sq
+                                            then renderOverlay rd sq
+                                            else Blank
+                           in return $ onSquare rd (Pictures [rd ^. selectPic, overlay]) sq
+
+shouldRenderOverlay :: RenderData -> Square -> Bool
+shouldRenderOverlay rd sq =
+    let w = rd ^. world
+        s = w ^. squares
+        cId = M.findWithDefault (-1) sq s
+        init = w ^. initTracker
+    in head init == cId
+
+renderOverlay :: RenderData -> Square -> Picture
+renderOverlay rd sq = Blank
 
 renderAll :: RenderData -> IO Picture
 renderAll rd = do
