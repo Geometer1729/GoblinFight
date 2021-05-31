@@ -51,7 +51,9 @@ doAction cid Move{moveActions=actions,movePath=path} = do
   cre <- lookupCre cid
   guard ( isNothing (cre ^. grappledBy) ) <|> fail "move attempt from grappled creature"
   guard ( and $ zipWith neighbor (cre ^. location:path) path ) <|> fail "invalid move path"
-  tumbleCount  <- length . catMaybes <$> mapM use [squares . at loc | loc <- path ]
+  tumbleIds  <- catMaybes <$> mapM use [squares . at loc | loc <- path ]
+  tumbleCres <- mapM lookupCre tumbleIds
+  let tumbleCount = length . filter (\t -> t ^. team /= cre ^. team) $ tumbleCres
   guard ( length path + tumbleCount <= actions * ( cre^.speed `div` 5 ) ) <|> fail "move path too long"
   doMoveHelp cid path
 
