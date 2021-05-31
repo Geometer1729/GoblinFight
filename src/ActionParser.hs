@@ -12,7 +12,7 @@ instance Read Action where
   readsPrec _ = readP_to_S actionParser
 
 moveParser :: ReadP Action
-moveParser = Move <$> (string "move" *> skipSpaces *> parseInt) <*> (skipSpaces *> parsePath)
+moveParser = Move <$> ( string "move" *> skipSpaces *> parsePath )
 
 stepParser :: ReadP Action
 stepParser = Step <$> (string "step" *> skipSpaces *> parseSq)

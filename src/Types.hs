@@ -29,7 +29,7 @@ negPair (x,y) = (-x,-y)
 type Stat = Lens' Creature Int
 
 data Action =
-    Move {moveActions :: Int , movePath :: [Square] }
+    Move {movePath :: [Square] }
   | Step {stepDest :: Square }
   | Strike { strikeIndex :: Int, strikeTarget :: Square }
   | DropProne
@@ -102,7 +102,7 @@ data PreWorld = PreWorld {
   _cres  :: [(Int,[(Creature,Square)])],
   _rects :: [(Square,Square)],
   _sqs   :: [Square]
-                         }
+                         } deriving Show
 
 data Range = Simple Int | Increment Int deriving Show
 

@@ -1,0 +1,22 @@
+teams
+1
+  gob 0,0
+	gob 1,0
+	gob 2,0
+	gob 3,0
+	gob 4,0
+	gob 5,0
+	gob 6,0
+	gob 7,0
+2
+  gob 0,7
+	gob 1,7
+	gob 2,7
+	gob 3,7
+	gob 4,7
+	gob 5,7
+	gob 6,7
+	gob 7,7
+rects
+0,0 7,7
+squares

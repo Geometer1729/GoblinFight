@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 
-import Assets
+import Assets.Tools
 import Types
 import Display
 import Control.Lens
@@ -20,10 +20,10 @@ testTumbleBy = execStateT (do
 
 get2GobCLI :: IO World
 get2GobCLI = execStateT (do
-  init2Gob
-  loadAI "cli" 1
+  loadFile "big"
+  loadAI "simple" 1
   loadAI "simple" 2
-    ) defWorld
+    ) undefined
 
 testGraphics :: IO ()
 testGraphics = do
