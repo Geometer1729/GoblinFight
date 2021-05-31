@@ -102,7 +102,7 @@ data PreWorld = PreWorld {
   _cres  :: [(Int,[(Creature,Square)])],
   _rects :: [(Square,Square)],
   _sqs   :: [Square]
-                         }
+                         } deriving Show
 
 data Range = Simple Int | Increment Int deriving Show
 
