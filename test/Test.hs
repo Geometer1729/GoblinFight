@@ -22,7 +22,7 @@ get2GobCLI :: IO World
 get2GobCLI = execStateT (do
   loadFile "big"
   loadAI "simple" 1
-  loadAI "cli" 2
+  loadAI "simple" 2
     ) undefined
 
 testGraphics :: IO ()

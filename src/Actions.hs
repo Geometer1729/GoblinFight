@@ -92,15 +92,12 @@ doAction cid Strike{strikeIndex=i,strikeTarget=t} = do
                  Increment ri -> ( guard (r <= 6 * ri) $> 2 * (r `div` ri) )
                       <|> fail " targetmore than 6 range incriments out"
 
-  {-
   coverBoost <- determineCover (cre ^. location) (target ^. location) >>= \case
       None     -> return 0
       Lesser   -> return 1
       Standard -> return 2
       Greater  -> return 4
       NoLOE    -> fail "no line of effect to that target"
-      -}
-  let coverBoost = 0
 
   isFlanking <- checkFlanking cid targetCid
   let targFlatFooted = isJust (target ^. grappledBy ) || target ^. prone || isFlanking
@@ -305,8 +302,8 @@ hasLoe s1 s2 = do
   covers <- sequence $ do
     c1 <- corners s1
     c2 <- corners s2
-    return $ coverOfLine (inbetween' c1 c2)
-  return $ maximum (None:covers) <= Lesser
+    return $ coverOfLine (inbetweenPt c1 c2)
+  return $ minimum (Greater:covers) <= Lesser
 
 corners :: Square -> [Point]
 corners (xl,yl) = do
@@ -325,6 +322,12 @@ inbetweenOrd (x1,y1) (x2,y2)
       pt1 = (fromIntegral x1 + 0.5,fromIntegral y1 + 0.5)
       pt2 = (fromIntegral x2 + 0.5,fromIntegral y2 + 0.5)
         in inbetween' pt1 pt2
+
+inbetweenPt :: Point -> Point -> [Square]
+inbetweenPt pt1@(x1,y1) pt2@(x2,y2)
+  | x1 == x2  = let x = floor x1 in [(x,y) | y <- [ceiling y1..floor y2-1] ]
+  | y1 == y2  = let y = floor y1 in [(x,y) | x <- [ceiling x1..floor x2-1] ]
+  | otherwise = inbetween' pt1 pt2
 
 inbetween' :: Point -> Point -> [Square]
 inbetween' (x1,y1) (x2,y2) = middle $ do
