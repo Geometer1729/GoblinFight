@@ -14,9 +14,11 @@ dependencies:
 - deepseq
 - directory
 - flow
+- free
 - gloss
 - gloss-juicy
 - lens
+- list-t
 - mtl
 - process
 - random

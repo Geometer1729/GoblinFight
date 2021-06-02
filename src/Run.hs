@@ -8,6 +8,7 @@ import Types
 import Control.Concurrent
 import Control.Lens hiding ((.>))
 import Control.Monad.State
+import Control.Applicative
 import Control.DeepSeq
 import Data.List
 import Flow
@@ -79,6 +80,23 @@ runAI Gloss = do
   mvar <- lift newEmptyMVar
   glossTurn .= True
   aiActionAwait .= Just mvar
+
+runAIReaction :: CUID -> ReactionTrigger -> PF2E Action
+runAIReaction = undefined
+
+offerReaction :: CUID -> ReactionTrigger -> PF2E ()
+offerReaction cid rt = do
+  action <- runAIReaction cid rt
+  cre <- lookupCre cid
+  let rs = cre ^. reactions . ix rt
+  guard ( any (`validate` action) rs ) <|> error "you can't do that as a reaction"
+  doAction cid action
+
+validate :: Reaction -> Action -> Bool
+validate RStep   Step{} = True
+validate RStrike Strike{} = True
+validate _ _ = False
+
 
 detectWin :: PF2E (Maybe Int)
 detectWin = do

@@ -8,6 +8,8 @@ module Actions where
 
 import Dice
 import Types
+import DistUtils
+import Reactions
 
 import Control.Applicative
 import Control.Lens hiding ((.>))
@@ -59,6 +61,8 @@ doAction cid Move{movePath=path} = do
   (use actionsLeft >>= guard . (>= actionsNeeded)) <|> fail "not enough actions to move that far"
   actionsLeft -= actionsNeeded
   doMoveHelp cid path
+  landed <- use $ cresById . at cid . to fromJust . location
+  trigger $ EndMovement landed (cre ^. team)
 
 doAction cid Step{stepDest=dest} = do
   actionsLeft -= 1
@@ -242,12 +246,6 @@ lookupCre cid = do
     case maybeCre of
       Just cre -> return cre
       Nothing  -> error "lookup given invalid creature id"
-
-linf :: Square -> Square -> Int
-linf (x1,y1) (x2,y2) = 5 * max (abs (x1-x2)) (abs (y1-y2))
-
-neighbor :: Square -> Square -> Bool
-neighbor a b = linf a b == 5
 
 -- should evantually take info about step vs move
 -- for reactions

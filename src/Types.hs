@@ -1,31 +1,42 @@
 {-# LANGUAGE
-   TemplateHaskell
-  ,RankNTypes
+   DeriveAnyClass
+  ,DeriveFunctor
   ,DeriveGeneric
-  ,DeriveAnyClass
+  ,ExistentialQuantification
+  ,RankNTypes
+  ,StandaloneDeriving
+  ,TemplateHaskell
 #-}
 
 module Types where
 
-import GHC.Generics
 import Control.Concurrent
-import Control.Lens
-import Control.Monad.State
-import Data.Set
 import Control.DeepSeq
+import Control.Lens
+import Control.Monad.Reader
+import Control.Monad.State
+import Control.Monad.Trans.Free
+import Data.Set
+import GHC.Generics
 
 import qualified Data.Map as M
 import qualified Data.Set as S
+
+-- ASync types
+
+type Async = FreeT MCF IO
+data MCF a = forall c. MCF (MVar c) (c -> a)
+deriving instance Functor MCF
+-- mvar continuations functor
+type MAsync a = ReaderT Bool Async a
+
+
 
 type CUID = Int
 type Damage = (DamageType,Dice)
 type Defenses    = M.Map DamageType DefenseType
 type PF2E = StateT World IO
 type Square = (Int,Int)
-addPair :: (Num a) => (a,a) -> (a,a) -> (a,a)
-addPair (x,y) (w,z) = (x+w,y+z)
-negPair :: (Num a) => (a,a) -> (a,a)
-negPair (x,y) = (-x,-y)
 type Stat = Lens' Creature Int
 
 data Action =
@@ -81,6 +92,8 @@ data Creature = Creature{
   _unarmed             :: Int, -- unarmed attack is needed for escape checks
   _grappledBy          :: Maybe (Bool,CUID), -- True indicates grapple was a crit succes
   _grappling           :: Maybe (Bool,CUID),
+  _reaction            :: Bool,
+  _reactions           :: M.Map ReactionTrigger [Reaction] ,
   _creatureSpecific    :: CSpecific
                         } deriving Show
 
@@ -107,6 +120,16 @@ data PreWorld = PreWorld {
                          } deriving Show
 
 data Range = Simple Int | Increment Int deriving Show
+
+data ReactionTrigger = EndMovementAdjacentAlly deriving (Eq,Ord,Show)
+
+data ReactionEvent  = EndMovement Square Int -- space team
+  deriving Show
+
+data Reaction =
+    RStep
+  | RStrike
+  deriving Show
 
 data World = World{
    _squares         :: M.Map Square CUID,
@@ -142,4 +165,9 @@ refDC,fortDC,willDC :: Lens' Creature Int
 refDC  = modToDC ref
 fortDC = modToDC fort
 willDC = modToDC will
+
+addPair :: (Num a) => (a,a) -> (a,a) -> (a,a)
+addPair (x,y) (w,z) = (x+w,y+z)
+negPair :: (Num a) => (a,a) -> (a,a)
+negPair (x,y) = (-x,-y)
 

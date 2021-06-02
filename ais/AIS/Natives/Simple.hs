@@ -1,7 +1,7 @@
 module AIS.Natives.Simple where
 
 import Types
-import Actions(linf)
+import DistUtils
 
 import Control.Lens hiding ((.>))
 import qualified Data.Map as M
