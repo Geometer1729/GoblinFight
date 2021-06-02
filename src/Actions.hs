@@ -31,7 +31,7 @@ passes :: CheckRes -> Bool
 passes = (>=2) . fromEnum
 
 roll :: Dice -> PF2E Int
-roll = lift . rollIO
+roll = liftIO . rollIO
 
 check :: Int -> Int -> PF2E CheckRes
 check bon dc = do
@@ -57,7 +57,7 @@ doAction cid Move{movePath=path} = do
   let tumbleCount = length . filter (\t -> t ^. team /= cre ^. team) $ tumbleCres
   let movement = length path + tumbleCount
   let actionsNeeded = (5*movement) `div` (cre ^. speed )
-  lift $ putStrLn $ "actions needed: " ++ show actionsNeeded
+  liftIO $ putStrLn $ "actions needed: " ++ show actionsNeeded
   (use actionsLeft >>= guard . (>= actionsNeeded)) <|> fail "not enough actions to move that far"
   actionsLeft -= actionsNeeded
   doMoveHelp cid path
@@ -274,10 +274,6 @@ type Point = (Float,Float) -- seems silly to import Gloss for this alias
 
 determineCover :: Square -> Square -> PF2E CoverLevel
 determineCover src dest = do
-  w <- get
-  lift $ putStrLn $ "src: "  ++ show src
-  lift $ putStrLn $ "dest: " ++ show dest
-  lift $ putStrLn $ "world: " ++ show w
   let coverSqs = inbetween src dest
   loe <- hasLoe src dest
   if loe

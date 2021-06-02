@@ -73,5 +73,5 @@ loadPW pw = do
 
 loadFile :: String -> PF2E ()
 loadFile path = do
-  pw <- lift $ parsePw <$> readFile ("worlds/" ++ path)
+  pw <- liftIO $ parsePw <$> readFile ("worlds/" ++ path)
   loadPW pw

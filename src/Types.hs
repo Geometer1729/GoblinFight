@@ -28,14 +28,14 @@ type Async = FreeT MCF IO
 data MCF a = forall c. MCF (MVar c) (c -> a)
 deriving instance Functor MCF
 -- mvar continuations functor
-type MAsync a = ReaderT Bool Async a
+type MAsync = ReaderT Bool Async
 
 
 
 type CUID = Int
 type Damage = (DamageType,Dice)
 type Defenses    = M.Map DamageType DefenseType
-type PF2E = StateT World IO
+type PF2E = StateT World MAsync
 type Square = (Int,Int)
 type Stat = Lens' Creature Int
 

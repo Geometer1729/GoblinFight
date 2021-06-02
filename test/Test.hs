@@ -3,11 +3,12 @@
 import Assets.Tools
 import Types
 import Display
-import Control.Lens
+--import Control.Lens
 import Run
 import AIS
 
-import Control.Monad.State
+--import Control.Monad.State
+--import Control.Monad.Reader
 import Graphics.Gloss.Interface.IO.Game
 
   {-
@@ -19,11 +20,11 @@ testTumbleBy = execStateT (do
     -}
 
 get2GobCLI :: IO World
-get2GobCLI = execStateT (do
+get2GobCLI = execPF2E (do
   loadFile "big"
   loadAI "simple" 1
   loadAI "simple" 2
-    ) undefined
+    )
 
 testGraphics :: IO ()
 testGraphics = do
@@ -36,10 +37,13 @@ testGraphics = do
 --eventHandle _event = return
 
 tick :: Float -> RenderData -> IO RenderData
-tick _duration = execStateT $ do
+tick _duration = undefined
+  {-
+  execStateT $ do
   w  <- use world
   w' <- lift $ execStateT step w
   world .= w'
+  -}
 
 main :: IO ()
 main = do

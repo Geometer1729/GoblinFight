@@ -3,11 +3,14 @@ module Run where
 
 import ActionParser ()
 import Actions
+import Assets.Defs
 import Types
+import MAsync
 
 import Control.Concurrent
 import Control.Lens hiding ((.>))
 import Control.Monad.State
+import Control.Monad.Reader
 import Control.Applicative
 import Control.DeepSeq
 import Data.List
@@ -15,6 +18,15 @@ import Flow
 import System.Process
 
 import qualified Data.Map as M
+
+runPF2E :: PF2E a -> IO (a,World)
+runPF2E pf2e = forceAwaits (runReaderT (runStateT pf2e defWorld) False)
+
+execPF2E :: PF2E a -> IO World
+execPF2E = fmap snd . runPF2E
+
+evalPF2E :: PF2E a -> IO a
+evalPF2E = fmap fst . runPF2E
 
 step :: PF2E ()
 step = do
@@ -41,11 +53,11 @@ runAction :: PF2E ()
 runAction =
   use aiActionAwait >>= \case
       Just mvar ->
-        lift (tryTakeMVar mvar) >>= \case
+        liftIO (tryTakeMVar mvar) >>= \case
           Just action -> do
             glossTurn .= False
-            lift $ putStrLn "Action played:"
-            lift $ print action
+            liftIO $ putStrLn "Action played:"
+            liftIO $ print action
             cid <- head <$> use initTracker
             doAction cid action
             aiActionAwait .= Nothing
@@ -56,28 +68,28 @@ runAction =
        let teamUp = cre ^. team
        Just aiUp <- use $ ais . at teamUp
        runAI aiUp
-       lift $ putStrLn "awaiting player"
+       liftIO $ putStrLn "awaiting player"
 
 runAI :: AI -> PF2E ()
 runAI (Native f) = do
   w <- get
-  mvar <- lift newEmptyMVar
+  mvar <- liftIO newEmptyMVar
   let result = f w
-  _ <- lift $ forkIO $ result `deepseq` putMVar mvar result
+  _ <- liftIO $ forkIO $ result `deepseq` putMVar mvar result
   aiActionAwait .= Just mvar
 runAI CLI = do
   w <- get
-  lift $ print w
-  mvar <- lift newEmptyMVar
-  _ <- lift $ forkIO $ readLn >>= putMVar mvar
+  liftIO $ print w
+  mvar <- liftIO newEmptyMVar
+  _ <- liftIO $ forkIO $ readLn >>= putMVar mvar
   aiActionAwait .= Just mvar
 runAI (Executable path) = do
   w <- get
-  mvar <- lift newEmptyMVar
-  _ <- lift $ forkIO $ readProcess path [] (show w) <&> read >>= putMVar mvar
+  mvar <- liftIO newEmptyMVar
+  _ <- liftIO $ forkIO $ readProcess path [] (show w) <&> read >>= putMVar mvar
   aiActionAwait .= Just mvar
 runAI Gloss = do
-  mvar <- lift newEmptyMVar
+  mvar <- liftIO newEmptyMVar
   glossTurn .= True
   aiActionAwait .= Just mvar
 

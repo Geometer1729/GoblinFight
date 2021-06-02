@@ -31,3 +31,10 @@ tryAwaits (FreeT input) = do
         Nothing -> return $ Right $ FreeT $ return $ Free (MCF mvar f)
         Just x -> tryAwaits (f x)
 
+forceAwaits :: Async a -> IO a
+forceAwaits (FreeT input) = do
+  input >>= \case
+    Pure a -> return a
+    Free (MCF mvar f) -> do
+      x <- takeMVar mvar
+      forceAwaits $ f x
