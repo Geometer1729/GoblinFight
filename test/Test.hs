@@ -3,14 +3,12 @@
 import Assets.Tools
 import Types
 import Display
---import Control.Lens
 import Run
 import AIS
 
---import Control.Monad.State
---import Control.Monad.Reader
 import Control.Lens
 import Graphics.Gloss.Interface.IO.Game
+import System.Environment
 
   {-
 testTumbleBy :: IO World
@@ -20,19 +18,31 @@ testTumbleBy = execStateT (do
     ) defWorld
     -}
 
-get2GobCLI :: IO World
-get2GobCLI = execPF2E (do
-  loadFile "big"
-  loadAI "simple" 1
-  loadAI "test.py" 2
-    ) undefined
+vs :: String -> String -> String -> IO World
+vs ai1 ai2 w = execPF2E (do
+  loadFile w
+  loadAI ai1 1
+  loadAI ai2 2
+                            ) undefined
 
+  {-
+get2GobCLI :: IO World
+get2GobCLI = vs "simple" "cli" "big"
+-}
+
+vsFromArgs :: IO World
+vsFromArgs = do
+  [ai1,ai2,w] <- getArgs
+  vs ai1 ai2 w
+
+  {-
 testGraphics :: IO ()
 testGraphics = do
     w <- get2GobCLI
     rd <- loadRenderData w
     -- print rd
     playIO FullScreen (makeColor 0 0 0 1) 30 rd renderAll handleMouse tick
+    -}
 
 --eventHandle :: Event -> RenderData -> IO RenderData
 --eventHandle _event = return
@@ -46,5 +56,6 @@ tick _duration rd = do
 
 main :: IO ()
 main = do
-    -- putStrLn "graphics test"
-    testGraphics
+    w <- vsFromArgs
+    rd <- loadRenderData w
+    playIO FullScreen (makeColor 0 0 0 1) 30 rd renderAll handleMouse tick
