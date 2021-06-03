@@ -41,8 +41,8 @@ stepPF2E _stepper (w,Just (asyncw,worldUpdates)) =
     Left w' -> return (w',Nothing)
     Right asyncw' -> do
       tryTakeMVar worldUpdates >>= \case
-        Nothing -> return (w ,Just (asyncw,worldUpdates))
-        Just w' -> return (w',Just (asyncw,worldUpdates))
+        Nothing -> return (w ,Just (asyncw',worldUpdates))
+        Just w' -> return (w',Just (asyncw',worldUpdates))
 -- this is a bit repetitive should be cleaned up
 
 tryAsync :: PF2E () -> MVar World -> World -> IO (Either World (Async World))
@@ -94,7 +94,7 @@ runAIReaction CLI cid rt w = do
   print w
   readLn
 runAIReaction (Executable fp) cid rt w = do
-  readProcess fp [] (unlines [show cid,show rt,show w]) <&> read
+  readProcess fp [] (unlines ["REACTION:",show cid,show rt,show w]) <&> read
 runAIReaction Gloss _ _ _ = undefined
 
 

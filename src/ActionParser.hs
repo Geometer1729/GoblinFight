@@ -11,7 +11,7 @@ import Data.Functor
 import Debug.Trace
 
 instance Read Action where
-  readsPrec _ w = traceShow w $ readP_to_S actionParser w
+  readsPrec _ = readP_to_S actionParser
 
 moveParser :: ReadP Action
 moveParser = Move <$> ( string "move" *> skipSpaces *> parsePath )

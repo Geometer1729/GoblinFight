@@ -33,6 +33,6 @@ loadExecs = do
   Just exeName <- lookupValueName "Executable"
   return $ ListE [ TupE
     [ Just (LitE (StringL file)),
-      Just (AppE (VarE exeName) (LitE (StringL $ "./ais/AIS/Executables/" ++ file ))) ]
+      Just (AppE (ConE exeName) (LitE (StringL $ "./ais/AIS/Executables/" ++ file ))) ]
       | file <- files ]
 

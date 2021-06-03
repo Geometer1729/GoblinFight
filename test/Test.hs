@@ -24,7 +24,7 @@ get2GobCLI :: IO World
 get2GobCLI = execPF2E (do
   loadFile "big"
   loadAI "simple" 1
-  loadAI "cli" 2
+  loadAI "test.py" 2
     ) undefined
 
 testGraphics :: IO ()
@@ -46,5 +46,5 @@ tick _duration rd = do
 
 main :: IO ()
 main = do
-    putStrLn "graphics test"
+    -- putStrLn "graphics test"
     testGraphics
