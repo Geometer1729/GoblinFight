@@ -18,6 +18,7 @@ import Control.Monad.State
 import Control.Monad.Trans.Free
 import Data.Set
 import GHC.Generics
+import Graphics.Gloss
 
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -51,7 +52,7 @@ data Action =
   | Demoralize{ demoralizeTarget :: Square }
   deriving (Generic,NFData,Show)
 
-data AI = Native (World -> Action)
+data AI = Native (World -> Action) (CUID -> ReactionTrigger -> World -> Maybe Action)
         | Executable FilePath
         | CLI -- handle through the shell the program was launched from
         | Gloss -- handled through gloss
@@ -131,6 +132,22 @@ data Reaction =
   | RStrike
   deriving Show
 
+data RenderData = RenderData {
+                    _world       :: World,
+                    _worldAsync  :: Maybe (Async World),
+                    _grassPic    :: Picture,
+                    _gobPic      :: Picture,
+                    _selectPic   :: Picture,
+                    _screenWidth :: Int,
+                    _screenHeight :: Int,
+                    _globalZoom  :: Int,
+                    _globalPan   :: (Float,Float),
+                    _defaultImageSize :: Int,
+                    _leftMouseDown :: Bool,
+                    _lastDragPos :: (Float,Float),
+                    _selectedSquare :: Maybe Square
+                  }
+
 data World = World{
    _squares         :: M.Map Square CUID,
    _battlefield     :: S.Set Square,
@@ -138,15 +155,18 @@ data World = World{
    _initTracker     :: [CUID],
    _nextCuid        :: CUID,
    _actionsLeft     :: Int,
-   _ais             :: M.Map Int AI, -- maps teams to AIs
    _mapen           :: Int,  -- 0 1 or 2 (rather than 0 5 or 10)
+   _ais             :: M.Map Int AI, -- maps teams to AIs
+   _aiActionAwait   :: Maybe (MVar Action),
+   _glossTurn       :: Bool
     }
 
+makeLenses ''World
 makeLenses ''Attack
 makeLenses ''CSpecific
 makeLenses ''Creature
 makeLenses ''PreWorld
-makeLenses ''World
+makeLenses ''RenderData
 
 instance Show World where
   show w = unlines [ "World state:"
@@ -168,4 +188,3 @@ addPair :: (Num a) => (a,a) -> (a,a) -> (a,a)
 addPair (x,y) (w,z) = (x+w,y+z)
 negPair :: (Num a) => (a,a) -> (a,a)
 negPair (x,y) = (-x,-y)
-

@@ -16,25 +16,7 @@ import Data.Maybe
 import qualified Data.Map as M
 import qualified Data.Set as S
 
-import Debug.Trace
-
 --all textures stored on disk as 512x512 pixels
-data RenderData = RenderData {
-                    _world       :: World,
-                    _grassPic    :: Picture,
-                    _gobPic      :: Picture,
-                    _selectPic   :: Picture,
-                    _screenWidth :: Int,
-                    _screenHeight :: Int,
-                    _globalZoom  :: Int,
-                    _globalPan   :: (Float,Float),
-                    _defaultImageSize :: Int,
-                    _leftMouseDown :: Bool,
-                    _lastDragPos :: (Float,Float),
-                    _selectedSquare :: Maybe Square
-                  } deriving (Show)
-
-makeLenses ''RenderData
 
 {-
 getRectGrid :: M.Map Square a -> [Square]
@@ -54,6 +36,7 @@ loadRenderData w = centerPan <$> do
     (width, height) <- getScreenSize
     return RenderData{
         _world = w,
+        _worldAsync = Nothing,
         _grassPic = fromJust grassMaybe,
         _gobPic = fromJust gobMaybe,
         _selectPic = fromJust selectMaybe,
@@ -156,7 +139,7 @@ handleMouse _ rd = return rd
 
 
 keyUp :: Key -> (Float,Float) -> RenderData-> IO RenderData
-keyUp (MouseButton LeftButton) (x,y) rd = trace "mouse up" $ return (rd & leftMouseDown .~ False)
+keyUp (MouseButton LeftButton) (x,y) rd = return (rd & leftMouseDown .~ False)
 keyUp _ _ rd = return rd
 
 keyDown :: Key -> (Float,Float) -> RenderData -> IO RenderData
@@ -175,7 +158,7 @@ mouseMovement (x,y) rd =
         let pan_new = if rd ^. leftMouseDown
                         then addPair (rd ^. globalPan) $ addPair (x,y) (negPair (rd ^. lastDragPos))
                         else rd ^. globalPan
-        in traceShow (rd ^. globalPan) $ return (rd & globalPan .~ pan_new & lastDragPos .~ (x,y))
+        in return (rd & globalPan .~ pan_new & lastDragPos .~ (x,y))
 
 screenToSquare :: (Float,Float) -> RenderData -> Square
 screenToSquare (x,y) rd =
@@ -228,7 +211,7 @@ actionGUI = Zipper []
 
 --Only called when square is selected
 renderActionGUI ::  RenderData -> Picture
-renderActionGUI rd = 
+renderActionGUI rd =
     let (Zipper leftbuttons selected rightbuttons) = actionGUI
         sq = fromJust $ rd ^. selectedSquare
         squareSize =  fromIntegral $ rd ^. globalZoom

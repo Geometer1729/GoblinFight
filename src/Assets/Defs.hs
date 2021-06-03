@@ -58,6 +58,8 @@ defGob = Creature{
   _unarmed    = 0,
   _grappledBy = Nothing,
   _grappling  = Nothing,
+  _reaction   = True,
+  _reactions  = M.fromList [(EndMovementAdjacentAlly,[RStep])],
   _creatureSpecific = Goblin
                  }
 

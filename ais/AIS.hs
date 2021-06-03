@@ -20,7 +20,7 @@ aiMap :: M.Map String AI
 aiMap = M.union natives execs
 
 natives :: M.Map String AI
-natives = M.fromList ( $(loadNatives) & each . _2 %~ Native )
+natives = M.fromList [ (name,Native actionai reactionai) | (name,actionai,reactionai) <-  $(loadNatives) ]
 
 execs :: M.Map String AI
 execs = M.fromList $(loadExecs)

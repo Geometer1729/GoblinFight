@@ -9,6 +9,9 @@ import Data.Maybe
 import Control.Monad
 import Data.List
 
+simpleReact :: CUID -> ReactionTrigger -> World -> Maybe Action
+simpleReact _ _ _ = Nothing
+
 simple :: World -> Action
 simple w = let
   cid = w ^. initTracker . to head

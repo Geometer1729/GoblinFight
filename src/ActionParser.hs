@@ -8,8 +8,10 @@ import Data.Char
 import Control.Applicative
 import Data.Functor
 
+import Debug.Trace
+
 instance Read Action where
-  readsPrec _ = readP_to_S actionParser
+  readsPrec _ w = traceShow w $ readP_to_S actionParser w
 
 moveParser :: ReadP Action
 moveParser = Move <$> ( string "move" *> skipSpaces *> parsePath )
@@ -39,7 +41,7 @@ demoralizeParser :: ReadP Action
 demoralizeParser = Demoralize <$> (string "demoralize" *> skipSpaces *> parseSq)
 
 actionParser :: ReadP Action
-actionParser = choice [moveParser,stepParser,strikeParser,dropProneParser,standParser,escapeParser,grappleParser,releaseParser,demoralizeParser]
+actionParser = skipSpaces *> choice [moveParser,stepParser,strikeParser,dropProneParser,standParser,escapeParser,grappleParser,releaseParser,demoralizeParser]
 
 parseInt :: ReadP Int
 parseInt = munch isDigit >>= \case

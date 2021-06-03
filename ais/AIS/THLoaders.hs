@@ -16,11 +16,16 @@ loadNative :: String -> Q (Maybe Exp)
 loadNative modu = do
   let varName = let (c:cs) = modu in toLower c : cs
   maybeName <- lookupValueName ("AIS.Natives." ++ modu ++ "." ++ varName)
+  maybeRName <- lookupValueName ("AIS.Natives." ++ modu ++ "." ++ varName ++ "React")
   case maybeName of
     Nothing -> return Nothing
-    Just name -> return $ Just $ TupE
-      [Just (LitE (StringL varName)),
-      Just (VarE name)]
+    Just name -> case maybeRName of
+                   Nothing -> return Nothing
+                   Just rname -> return $ Just $ TupE
+                          [Just (LitE (StringL varName))
+                          ,Just (VarE name)
+                          ,Just (VarE rname)
+                          ]
 
 loadExecs :: Q Exp
 loadExecs = do

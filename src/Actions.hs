@@ -56,7 +56,7 @@ doAction cid Move{movePath=path} = do
   tumbleCres <- mapM lookupCre tumbleIds
   let tumbleCount = length . filter (\t -> t ^. team /= cre ^. team) $ tumbleCres
   let movement = length path + tumbleCount
-  let actionsNeeded = (5*movement) `div` (cre ^. speed )
+  let actionsNeeded = (5*movement) `divCeil` (cre ^. speed )
   liftIO $ putStrLn $ "actions needed: " ++ show actionsNeeded
   (use actionsLeft >>= guard . (>= actionsNeeded)) <|> fail "not enough actions to move that far"
   actionsLeft -= actionsNeeded
@@ -347,3 +347,5 @@ intervals xl xh = let
   xh' = fromIntegral ( floor   xh :: Int )
     in [(xl,xl')] ++ [(x,x+1) | x <- [xl'..xh'-1] ] ++ [(xh',xh)]
 
+divCeil :: Integral a => a -> a -> a
+divCeil a b = let (q,r) = quotRem a b in q + min r 1

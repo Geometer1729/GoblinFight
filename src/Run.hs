@@ -69,25 +69,38 @@ rotate [] = [] -- might run if all creatures dead
 rotate (x:xs) = xs ++ [x]
 
 runAI :: AI -> World -> IO Action
-runAI (Native f) w = do
-  let result = f w
-  result `deepseq` return result
+runAI (Native f _) w = let result = f w in result `deepseq` return result
 runAI CLI w = do
   print w >> readLn
 runAI (Executable path) w = do
   readProcess path [] (show w) <&> read
 runAI Gloss _w = undefined -- gotta patch this at some point
 
-runAIReaction :: CUID -> ReactionTrigger -> PF2E Action
-runAIReaction = undefined
+runAIReaction :: AI -> CUID -> ReactionTrigger -> World -> IO (Maybe Action)
+runAIReaction (Native _ r) cid rt w = let result = r cid rt w
+                                       in result `deepseq` return result
+runAIReaction CLI cid rt w = do
+  print cid
+  print rt
+  print w
+  readLn
+runAIReaction (Executable fp) cid rt w = do
+  readProcess fp [] (unlines [show cid,show rt,show w]) <&> read
+runAIReaction Gloss _ _ _ = undefined
+
 
 offerReaction :: CUID -> ReactionTrigger -> PF2E ()
 offerReaction cid rt = do
-  action <- runAIReaction cid rt
+  w <- get
   cre <- lookupCre cid
-  let rs = cre ^. reactions . ix rt
-  guard ( any (`validate` action) rs ) <|> error "you can't do that as a reaction"
-  doAction cid action
+  Just ai <- use $ ais . at (cre ^. team)
+  maction <- lift (masync (runAIReaction ai cid rt w))
+  case maction of
+    Just action -> do
+      let rs = cre ^. reactions . ix rt
+      guard ( any (`validate` action) rs ) <|> error "you can't do that as a reaction"
+      doAction cid action
+    Nothing -> return ()
 
 validate :: Reaction -> Action -> Bool
 validate RStep   Step{} = True
