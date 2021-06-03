@@ -3,11 +3,9 @@ module Run where
 
 import ActionParser ()
 import Actions
-import Assets.Defs
 import Types
 import MAsync
 
-import Control.Concurrent
 import Control.Lens hiding ((.>))
 import Control.Monad.State
 import Control.Monad.Reader
@@ -19,21 +17,42 @@ import System.Process
 
 import qualified Data.Map as M
 
-runPF2E :: PF2E a -> IO (a,World)
-runPF2E pf2e = forceAwaits (runReaderT (runStateT pf2e defWorld) False)
+runPF2E  :: PF2E a -> World -> IO (a,World)
+runPF2E  pf2e w = forceAwaits $ runReaderT (runStateT  pf2e w) False
 
-execPF2E :: PF2E a -> IO World
-execPF2E = fmap snd . runPF2E
+execPF2E :: PF2E a -> World -> IO World
+execPF2E pf2e w = forceAwaits $ runReaderT (execStateT pf2e w) False
 
-evalPF2E :: PF2E a -> IO a
-evalPF2E = fmap fst . runPF2E
+evalPF2E :: PF2E a -> World -> IO a
+evalPF2E pf2e w = forceAwaits $ runReaderT (evalStateT pf2e w) False
+
+stepPF2E :: PF2E () -> (World,Maybe (Async World)) -> IO (World,Maybe (Async World))
+stepPF2E stepper (w,Nothing) =
+  tryAsync stepper w >>= \case
+    Left w' -> return (w',Nothing)
+    Right asyncw -> return (w,Just asyncw)
+stepPF2E _stepper (w,Just asyncw) =
+  tryAwaits asyncw >>= \case
+    Left w' -> return (w',Nothing)
+    Right asyncw' -> return (w,Just asyncw')
+-- this is a bit repetitive should be cleaned up
+
+tryAsync :: PF2E () -> World -> IO (Either World (Async World))
+tryAsync pf2e w = tryAwaits $ runReaderT (execStateT pf2e w) True
 
 step :: PF2E ()
 step = do
   left <- use actionsLeft
   if left == 0
      then endOfTurn >> stepInit
-     else runAction
+     else do
+       w <- get
+       cid <- head <$> use initTracker
+       cre <- lookupCre cid
+       let teamUp = cre ^. team
+       Just aiUp <- use $ ais . at teamUp
+       action <- lift ( masync (runAI aiUp w)) :: PF2E Action
+       doAction cid action
 
 endOfTurn :: PF2E ()
 endOfTurn = do
@@ -49,49 +68,15 @@ rotate :: [a] -> [a]
 rotate [] = [] -- might run if all creatures dead
 rotate (x:xs) = xs ++ [x]
 
-runAction :: PF2E ()
-runAction =
-  use aiActionAwait >>= \case
-      Just mvar ->
-        liftIO (tryTakeMVar mvar) >>= \case
-          Just action -> do
-            glossTurn .= False
-            liftIO $ putStrLn "Action played:"
-            liftIO $ print action
-            cid <- head <$> use initTracker
-            doAction cid action
-            aiActionAwait .= Nothing
-          Nothing -> return ()
-      Nothing -> do
-       cid <- head <$> use initTracker
-       cre <- lookupCre cid
-       let teamUp = cre ^. team
-       Just aiUp <- use $ ais . at teamUp
-       runAI aiUp
-       liftIO $ putStrLn "awaiting player"
-
-runAI :: AI -> PF2E ()
-runAI (Native f) = do
-  w <- get
-  mvar <- liftIO newEmptyMVar
+runAI :: AI -> World -> IO Action
+runAI (Native f) w = do
   let result = f w
-  _ <- liftIO $ forkIO $ result `deepseq` putMVar mvar result
-  aiActionAwait .= Just mvar
-runAI CLI = do
-  w <- get
-  liftIO $ print w
-  mvar <- liftIO newEmptyMVar
-  _ <- liftIO $ forkIO $ readLn >>= putMVar mvar
-  aiActionAwait .= Just mvar
-runAI (Executable path) = do
-  w <- get
-  mvar <- liftIO newEmptyMVar
-  _ <- liftIO $ forkIO $ readProcess path [] (show w) <&> read >>= putMVar mvar
-  aiActionAwait .= Just mvar
-runAI Gloss = do
-  mvar <- liftIO newEmptyMVar
-  glossTurn .= True
-  aiActionAwait .= Just mvar
+  result `deepseq` return result
+runAI CLI w = do
+  print w >> readLn
+runAI (Executable path) w = do
+  readProcess path [] (show w) <&> read
+runAI Gloss _w = undefined -- gotta patch this at some point
 
 runAIReaction :: CUID -> ReactionTrigger -> PF2E Action
 runAIReaction = undefined

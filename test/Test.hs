@@ -24,7 +24,7 @@ get2GobCLI = execPF2E (do
   loadFile "big"
   loadAI "simple" 1
   loadAI "simple" 2
-    )
+    ) undefined
 
 testGraphics :: IO ()
 testGraphics = do

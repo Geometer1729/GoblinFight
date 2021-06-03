@@ -140,8 +140,6 @@ data World = World{
    _actionsLeft     :: Int,
    _ais             :: M.Map Int AI, -- maps teams to AIs
    _mapen           :: Int,  -- 0 1 or 2 (rather than 0 5 or 10)
-   _aiActionAwait   :: Maybe (MVar Action),
-   _glossTurn       :: Bool
     }
 
 makeLenses ''Attack
