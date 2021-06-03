@@ -36,7 +36,7 @@ type MAsync = ReaderT Bool Async
 type CUID = Int
 type Damage = (DamageType,Dice)
 type Defenses    = M.Map DamageType DefenseType
-type PF2E = StateT World MAsync
+type PF2E = StateT World (ReaderT (Maybe (MVar World)) MAsync)
 type Square = (Int,Int)
 type Stat = Lens' Creature Int
 
@@ -134,7 +134,7 @@ data Reaction =
 
 data RenderData = RenderData {
                     _world       :: World,
-                    _worldAsync  :: Maybe (Async World),
+                    _worldAsync  :: Maybe (Async World,MVar World),
                     _grassPic    :: Picture,
                     _gobPic      :: Picture,
                     _selectPic   :: Picture,

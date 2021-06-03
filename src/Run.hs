@@ -7,6 +7,7 @@ import Types
 import MAsync
 
 import Control.Lens hiding ((.>))
+import Control.Concurrent
 import Control.Monad.State
 import Control.Monad.Reader
 import Control.Applicative
@@ -18,27 +19,34 @@ import System.Process
 import qualified Data.Map as M
 
 runPF2E  :: PF2E a -> World -> IO (a,World)
-runPF2E  pf2e w = forceAwaits $ runReaderT (runStateT  pf2e w) False
+runPF2E  pf2e w = forceAwaits $ runReaderT (runReaderT (runStateT  pf2e w) Nothing) False
 
 execPF2E :: PF2E a -> World -> IO World
-execPF2E pf2e w = forceAwaits $ runReaderT (execStateT pf2e w) False
+execPF2E pf2e w = snd <$> runPF2E pf2e w
 
 evalPF2E :: PF2E a -> World -> IO a
-evalPF2E pf2e w = forceAwaits $ runReaderT (evalStateT pf2e w) False
+evalPF2E pf2e w = fst <$> runPF2E pf2e w
 
-stepPF2E :: PF2E () -> (World,Maybe (Async World)) -> IO (World,Maybe (Async World))
-stepPF2E stepper (w,Nothing) =
-  tryAsync stepper w >>= \case
+stepPF2E :: PF2E () -> (World,Maybe (Async World,MVar World)) -> IO (World,Maybe (Async World,MVar World))
+stepPF2E stepper (w,Nothing) = do
+  worldUpdates <- newEmptyMVar
+  tryAsync stepper worldUpdates w >>= \case
     Left w' -> return (w',Nothing)
-    Right asyncw -> return (w,Just asyncw)
-stepPF2E _stepper (w,Just asyncw) =
+    Right asyncw -> do
+      tryTakeMVar worldUpdates >>= \case
+        Nothing -> return (w ,Just (asyncw,worldUpdates))
+        Just w' -> return (w',Just (asyncw,worldUpdates))
+stepPF2E _stepper (w,Just (asyncw,worldUpdates)) =
   tryAwaits asyncw >>= \case
     Left w' -> return (w',Nothing)
-    Right asyncw' -> return (w,Just asyncw')
+    Right asyncw' -> do
+      tryTakeMVar worldUpdates >>= \case
+        Nothing -> return (w ,Just (asyncw,worldUpdates))
+        Just w' -> return (w',Just (asyncw,worldUpdates))
 -- this is a bit repetitive should be cleaned up
 
-tryAsync :: PF2E () -> World -> IO (Either World (Async World))
-tryAsync pf2e w = tryAwaits $ runReaderT (execStateT pf2e w) True
+tryAsync :: PF2E () -> MVar World -> World -> IO (Either World (Async World))
+tryAsync pf2e mvar w = tryAwaits $ runReaderT ( runReaderT (execStateT pf2e w) (Just mvar)) True
 
 step :: PF2E ()
 step = do
@@ -51,7 +59,8 @@ step = do
        cre <- lookupCre cid
        let teamUp = cre ^. team
        Just aiUp <- use $ ais . at teamUp
-       action <- lift ( masync (runAI aiUp w)) :: PF2E Action
+       updateWorld
+       action <- lift . lift $ masync (runAI aiUp w) :: PF2E Action
        doAction cid action
 
 endOfTurn :: PF2E ()
@@ -94,7 +103,8 @@ offerReaction cid rt = do
   w <- get
   cre <- lookupCre cid
   Just ai <- use $ ais . at (cre ^. team)
-  maction <- lift (masync (runAIReaction ai cid rt w))
+  updateWorld
+  maction <- lift . lift $ masync (runAIReaction ai cid rt w)
   case maction of
     Just action -> do
       let rs = cre ^. reactions . ix rt
@@ -107,7 +117,6 @@ validate RStep   Step{} = True
 validate RStrike Strike{} = True
 validate _ _ = False
 
-
 detectWin :: PF2E (Maybe Int)
 detectWin = do
   creatures <- use cresById
@@ -116,4 +125,10 @@ detectWin = do
     guard  $ length ts == 1
     return $ head . head $ ts
 
+updateWorld :: PF2E ()
+updateWorld = do
+  mMVar <- ask :: PF2E (Maybe (MVar World))
+  case mMVar of
+    Nothing -> return ()
+    Just mvar -> get >>= liftIO . putMVar mvar
 

@@ -44,3 +44,4 @@ instance Num (Dice -> Dice) where
   (-)    = error "dice litteral hack went awry"
   abs    = error "dice litteral hack went awry"
   signum = error "dice litteral hack went awry"
+
